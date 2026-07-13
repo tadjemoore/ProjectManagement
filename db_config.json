@@ -1,0 +1,4 @@
+{
+    "db_path": "projects.db",
+    "_comment": "Change db_path to your NAS directory, e.g., 'Z:/shared/projects.db' or '//NAS/share/projects.db'"
+}

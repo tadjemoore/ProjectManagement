@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login | Nexflow</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="auth-container">
+        <form id="loginForm" class="auth-card">
+            <h2>Sign in</h2>
+            <p class="auth-help-text">Use your workspace username and password.</p>
+            <div id="loginError" class="auth-error hidden"></div>
+            <label for="username">Username</label>
+            <input id="username" name="username" class="form-input" required>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" class="form-input" required>
+            <button type="submit" class="btn btn-primary">Log in</button>
+            <button type="button" id="signupToggleBtn" class="btn btn-secondary">Create new user</button>
+        </form>
+
+        <form id="signupForm" class="auth-card hidden">
+            <h2>Create account</h2>
+            <p class="auth-help-text">Register a new workspace user.</p>
+            <div id="signupError" class="auth-error hidden"></div>
+            <label for="signupName">Full Name</label>
+            <input id="signupName" name="name" class="form-input" required>
+            <label for="signupUsername">Username</label>
+            <input id="signupUsername" name="username" class="form-input" required>
+            <label for="signupRole">Role</label>
+            <select id="signupRole" name="role" class="form-select" required>
+                <option value="">Loading roles...</option>
+            </select>
+            <label for="signupPassword">Password</label>
+            <input id="signupPassword" name="password" type="password" class="form-input" required>
+            <label for="signupConfirmPassword">Confirm Password</label>
+            <input id="signupConfirmPassword" name="confirmPassword" type="password" class="form-input" required>
+            <button type="submit" class="btn btn-primary">Sign up</button>
+            <button type="button" id="cancelSignupBtn" class="btn btn-secondary">Back to sign in</button>
+        </form>
+    </div>
+
+    <script src="view/loginView.js"></script>
+    <script src="controller/loginController.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            new LoginController();
+        });
+    </script>
+</body>
+</html>

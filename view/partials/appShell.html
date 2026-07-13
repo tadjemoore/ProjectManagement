@@ -1,0 +1,263 @@
+<div class="app-container">
+    <aside class="app-sidebar" id="appSidebar">
+        <div class="sidebar-header">
+            <div class="brand-logo">
+                <i class="fa-solid fa-cubes-stacked brand-icon"></i>
+                <span class="brand-name">Nexflow</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="#" class="nav-item active" data-target="dashboard" id="nav-dashboard">
+                <i class="fa-solid fa-chart-pie nav-icon"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="nav-item" data-target="projects" id="nav-projects">
+                <i class="fa-solid fa-folder-open nav-icon"></i>
+                <span>Projects</span>
+            </a>
+            <a href="#" class="nav-item" data-target="tasks" id="nav-tasks">
+                <i class="fa-solid fa-list-check nav-icon"></i>
+                <span>All Tasks</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-simulator-card">
+                <div class="simulation-badge">SIMULATOR ACTIVE</div>
+                <div class="active-user-display" id="activeUserDisplay">
+                    <div class="avatar avatar-ring" id="activeUserAvatar"></div>
+                    <div class="user-info">
+                        <h4 id="activeUserName"></h4>
+                        <p id="activeUserRole"></p>
+                    </div>
+                </div>
+                <div class="user-select-wrapper">
+                    <label for="userSwitcherSelect">Switch Active User:</label>
+                    <select id="userSwitcherSelect" class="form-select user-switcher"></select>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="app-main">
+        <header class="app-header">
+            <div class="header-left">
+                <h1 id="pageTitle">Dashboard</h1>
+                <p class="header-subtitle" id="currentDateDisplay"></p>
+            </div>
+            <div class="header-right">
+                <button class="btn btn-secondary" id="headerNewTaskBtn">
+                    <i class="fa-solid fa-plus"></i> New Task
+                </button>
+                <button class="btn btn-primary" id="headerNewProjectBtn">
+                    <i class="fa-solid fa-folder-plus"></i> New Project
+                </button>
+                <button class="btn btn-secondary hidden" id="manageRolesBtn">
+                    <i class="fa-solid fa-user-gear"></i> Manage Roles
+                </button>
+                <button class="btn btn-secondary" id="logoutBtn" type="button">
+                    <i class="fa-solid fa-right-from-bracket"></i> Logout
+                </button>
+            </div>
+        </header>
+
+        <div class="view-content">
+            <section id="view-dashboard" class="app-view active-view">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon icon-blue"><i class="fa-solid fa-diagram-project"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-label">Total Projects</span>
+                            <h3 id="statTotalProjects">-</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-orange"><i class="fa-solid fa-spinner"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-label">In Progress</span>
+                            <h3 id="statInProgressProjects">-</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-green"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-label">Completed Tasks</span>
+                            <h3 id="statCompletedTasks">-</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon icon-red"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                        <div class="stat-details">
+                            <span class="stat-label">Pending Tasks</span>
+                            <h3 id="statPendingTasks">-</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dash-columns">
+                    <div class="dash-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-folder-closed icon-accent"></i> Projects I'm On</h3>
+                            <span class="panel-badge" id="myProjectsCount">0</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="projects-list-compact" id="myProjectsContainer"></div>
+                        </div>
+                    </div>
+
+                    <div class="dash-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-list-check icon-accent"></i> My Assigned Tasks</h3>
+                            <span class="panel-badge" id="myTasksCount">0</span>
+                        </div>
+                        <div class="panel-body">
+                            <div class="tasks-list-compact" id="myTasksContainer"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-projects" class="app-view">
+                <div class="filters-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="projectSearchInput" placeholder="Search projects by title..." class="form-input">
+                    </div>
+                    <div class="filters-group">
+                        <select id="projectStatusFilter" class="form-select">
+                            <option value="all">All Statuses</option>
+                            <option value="not_started">Not Started</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="on_hold">On Hold</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="projects-grid" id="projectsGrid"></div>
+            </section>
+
+            <section id="view-tasks" class="app-view">
+                <div class="filters-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="taskSearchInput" placeholder="Search tasks by title..." class="form-input">
+                    </div>
+                    <div class="filters-group">
+                        <select id="taskScopeFilter" class="form-select">
+                            <option value="all">All Tasks</option>
+                            <option value="mine">Assigned to Me</option>
+                        </select>
+                        <select id="taskStatusFilter" class="form-select">
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                        <select id="taskPriorityFilter" class="form-select">
+                            <option value="all">All Priorities</option>
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="tasks-table-card">
+                    <table class="tasks-table">
+                        <thead>
+                            <tr>
+                                <th width="5%">Status</th>
+                                <th width="35%">Task Name</th>
+                                <th width="20%">Project</th>
+                                <th width="15%">Assignee</th>
+                                <th width="10%">Priority</th>
+                                <th width="10%">Due Date</th>
+                                <th width="5%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="globalTasksTableBody"></tbody>
+                    </table>
+                    <div class="empty-table-state hidden" id="tasksEmptyState">
+                        <i class="fa-solid fa-clipboard-list-check"></i>
+                        <p>No tasks match the selected filters.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section id="view-project-detail" class="app-view">
+                <div class="project-detail-header-panel">
+                    <div class="detail-meta-top">
+                        <button class="btn-back" id="backToProjectsBtn">
+                            <i class="fa-solid fa-arrow-left"></i> Back to Projects
+                        </button>
+                        <div class="detail-project-status">
+                            <label for="projectDetailStatusSelect">Project Status:</label>
+                            <select id="projectDetailStatusSelect" class="status-select-pill">
+                                <option value="not_started">🔴 Not Started</option>
+                                <option value="in_progress">🟡 In Progress</option>
+                                <option value="on_hold">🟠 On Hold</option>
+                                <option value="completed">🟢 Completed</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="project-main-info">
+                        <h2 id="projDetailTitle">Alpha Mobile App</h2>
+                        <p id="projDetailDesc">Build the core React Native application for client testing and delivery.</p>
+                    </div>
+
+                    <div class="project-meta-strip">
+                        <div class="meta-item">
+                            <span class="meta-label">Owner</span>
+                            <div class="meta-value owner-display" id="projDetailOwner">
+                                <div class="avatar avatar-sm"></div>
+                                <span></span>
+                            </div>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Due Date</span>
+                            <div class="meta-value date-display" id="projDetailDueDate">
+                                <i class="fa-regular fa-calendar-check"></i> <span>2026-08-30</span>
+                            </div>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Progress</span>
+                            <div class="meta-value progress-display-wrapper">
+                                <div class="progress-bar-container">
+                                    <div class="progress-bar-fill" id="projDetailProgressBar" style="width: 40%;"></div>
+                                </div>
+                                <span class="progress-percent" id="projDetailProgressPercent">40%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="project-detail-content">
+                    <div class="detail-sidebar-card">
+                        <div class="card-title-row">
+                            <h3>Project Team</h3>
+                            <button class="btn-icon-add" id="manageMembersBtn" title="Manage Project Members">
+                                <i class="fa-solid fa-user-plus"></i>
+                            </button>
+                        </div>
+                        <div class="members-avatars-list" id="projDetailMembersList"></div>
+                    </div>
+
+                    <div class="detail-tasks-card">
+                        <div class="card-title-row">
+                            <h3>Project Checklist</h3>
+                            <button class="btn btn-primary btn-sm" id="detailAddTaskBtn">
+                                <i class="fa-solid fa-plus"></i> Add Task
+                            </button>
+                        </div>
+                        <div class="project-tasks-list" id="projDetailTasksList"></div>
+                        <div class="empty-state-card hidden" id="projTasksEmptyState">
+                            <i class="fa-solid fa-circle-nodes"></i>
+                            <p>No tasks created for this project yet.</p>
+                            <button class="btn btn-secondary btn-sm" id="detailEmptyStateAddTaskBtn">Create First Task</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+</div>

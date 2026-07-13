@@ -1,0 +1,23 @@
+async function loadPartial(filePath) {
+    const response = await fetch(filePath);
+    if (!response.ok) {
+        throw new Error(`Failed to load partial: ${filePath}`);
+    }
+    return response.text();
+}
+
+window.renderViewPartials = async function () {
+    const shellMarkup = await loadPartial('view/partials/appShell.html');
+    const modalMarkup = await loadPartial('view/partials/modals.html');
+
+    const shellRoot = document.getElementById('app-shell-root');
+    const modalRoot = document.getElementById('modal-root');
+
+    if (shellRoot) {
+        shellRoot.innerHTML = shellMarkup;
+    }
+
+    if (modalRoot) {
+        modalRoot.innerHTML = modalMarkup;
+    }
+};

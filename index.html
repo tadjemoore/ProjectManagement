@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexflow // Premium Project Management</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div id="app-shell-root"></div>
+    <div id="modal-root"></div>
+
+    <!-- Load JavaScript MVC Code -->
+    <script src="model/stateModel.js?v20260709"></script>
+    <script src="model/projectModel.js?v20260709"></script>
+    <script src="model/taskModel.js?v20260709"></script>
+    <script src="model/appModel.js?v20260709"></script>
+    <script src="view/partialRenderer.js?v20260709"></script>
+    <script src="view/commonView.js?v20260709"></script>
+    <script src="view/dashboardView.js?v20260709"></script>
+    <script src="view/projectView.js?v20260709"></script>
+    <script src="view/taskView.js?v20260709"></script>
+    <script src="view/modalView.js?v20260709"></script>
+    <script src="view/eventView.js?v20260709"></script>
+    <script src="view/appViewModular.js?v20260709"></script>
+    <script src="controller/navigationController.js?v20260709"></script>
+    <script src="controller/projectController.js?v20260709"></script>
+    <script src="controller/taskController.js?v20260709"></script>
+    <script src="controller/appController.js?v20260709"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            await window.renderViewPartials();
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            if (logoutBtn) {
+                logoutBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('currentUserId');
+                    window.location.href = 'login.html';
+                });
+            }
+            const app = new ProjectManagerApp();
+            app.start();
+        });
+    </script>
+</body>
+</html>

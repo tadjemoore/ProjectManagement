@@ -1,0 +1,355 @@
+class AppController {
+    constructor(model, view) {
+        this.model = model;
+        this.view = view;
+
+        this.projectSearch = '';
+        this.projectStatus = 'all';
+        this.taskSearch = '';
+        this.taskScope = 'all';
+        this.taskStatus = 'all';
+        this.taskPriority = 'all';
+        this.activeProjectId = null;
+        this.adminRoles = [];
+        this.navigationController = new NavigationController(model, view, this);
+        this.projectController = new ProjectController(model, view, this);
+        this.taskController = new TaskController(model, view, this);
+        this.refreshIntervalMs = 5000;
+        this.refreshTimer = null;
+        this.refreshInFlight = false;
+    }
+
+    async init() {
+        this.model.subscribe((state) => this.handleStateChange(state));
+        this.navigationController.init();
+        this.projectController.init();
+        this.taskController.init();
+        this.view.bindRoleAssignmentSave((userId, role) => this.handleRoleAssignment(userId, role));
+        await this.model.loadData();
+
+        const savedUserId = localStorage.getItem('currentUserId');
+        const state = this.model.getState();
+        const hasSaved = !!savedUserId;
+        const exists = hasSaved && state.users.some(user => user.id === savedUserId);
+
+        if (!hasSaved || !exists) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('currentUserId');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        const changed = this.model.changeUser(savedUserId);
+        if (!changed) {
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('currentUserId');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        this.startAutoRefresh();
+
+        window.addEventListener('beforeunload', () => this.stopAutoRefresh());
+
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState == 'visible') {
+                this.startAutoRefresh();
+            }
+        });
+
+        window.addEventListener('focus', () => this.startAutoRefresh());
+    }
+
+    startAutoRefresh() {
+        this.stopAutoRefresh();
+        this.refreshTimer = setInterval(() => {
+            this.refreshDataSilently();
+        }, this.refreshIntervalMs);
+    }
+
+    stopAutoRefresh() {
+        if (this.refreshTimer) {
+            clearInterval(this.refreshTimer);
+            this.refreshTimer = null;
+        }
+    }
+
+    async refreshDataSilently() {
+        if (this.refreshInFlight) return;
+
+        this.refreshInFlight = true;
+        try {
+            await this.model.loadData();
+        } catch (error) {
+            console.error('Error refreshing data:', error);
+        } finally {
+            this.refreshInFlight = false;
+        }
+    }
+
+    openCreateProjectModal() {
+        const state = this.model.getState();
+
+        if (!state.currentUser || !state.currentUser.id) {
+            this.view.showToast('Session invalid. Please log in again.', 'error');
+            localStorage.removeItem('isLoggedIn');
+            localStorage.removeItem('currentUserId');
+            window.location.href = 'login.html';
+            return;
+        }
+
+        this.view.populateProjectMembersCheckbox(state.users, 'projectMembersCheckboxGrid');
+    }
+
+    openManageMembersModal() {
+        if (!this.activeProjectId) return;
+
+        const state = this.model.getState();
+        const project = state.projects.find(item => item.id === this.activeProjectId);
+        if (project) {
+            this.view.setupManageMembersModal(project, state.users);
+            this.view.openModal(this.view.manageMembersModal);
+        }
+    }
+
+    async openManageRolesModal() {
+        const state = this.model.getState();
+        if (state.currentUser?.role !== 'Admin') return;
+
+        try {
+            const response = await fetch('/api/admin/roles');
+            const roles = await response.json();
+
+            if (!response.ok) {
+                this.view.showToast('Unable to load roles.', 'error');
+                return;
+            }
+
+            this.adminRoles = roles;
+            this.view.setupManageRolesModal(state.users, roles);
+            this.view.openModal(this.view.manageRolesModal);
+        } catch (error) {
+            this.view.showToast('Unable to load roles.', 'error');
+        }
+    }
+
+    handleStateChange(state) {
+        const { currentUser, users } = state;
+
+        this.view.renderUserSwitcher(users, currentUser?.id);
+        this.view.renderActiveUser(currentUser);
+        if (this.view.manageRolesBtn) {
+            this.view.manageRolesBtn.classList.toggle('hidden', currentUser?.role !== 'Admin');
+        }
+        this.renderDashboard(state);
+        this.renderProjectsList(state);
+        this.renderTasksList(state);
+
+        if (this.activeProjectId) {
+            const project = state.projects.find(item => item.id === this.activeProjectId);
+            if (project) {
+                this.view.renderProjectDetail(
+                    project,
+                    state.tasks,
+                    state.users,
+                    (taskId) => this.handleTaskToggle(taskId),
+                    (taskId) => this.handleTaskDelete(taskId)
+                );
+            }
+        }
+    }
+
+    handleNavigation(targetView) {
+        if (targetView !== 'project-detail') {
+            this.activeProjectId = null;
+        }
+        this.view.showView(targetView);
+    }
+
+    hasGlobalProjectAccess(state = this.model.getState()) {
+        const role = state.currentUser?.role;
+        return role === 'Admin' || role === 'Manager';
+    }
+
+    getVisibleProjects(state = this.model.getState()) {
+        const { projects, currentUser } = state;
+        if (!currentUser) return [];
+
+        if (this.hasGlobalProjectAccess(state)) {
+            return projects;
+        }
+        
+        return projects.filter(project => project.memberIds.includes(currentUser.id));
+    }
+
+    getVisibleTasks(state = this.model.getState()) {
+        const { tasks, projects, currentUser } = state;
+        if (!currentUser) return [];
+
+        if (this.hasGlobalProjectAccess(state)) {
+            return tasks;
+        }
+
+        const visibleProjectIds = new Set(
+            projects
+                .filter(project => project.memberIds.includes(currentUser.id))
+                .map(project => project.id)
+        );
+
+        return tasks.filter(task => visibleProjectIds.has(task.projectId));
+    }
+
+    canViewProject(projectId, state = this.model.getState()) {
+        const { currentUser } = state;
+        if (!currentUser) return false;
+
+        const project = state.projects.find(item => item.id === projectId);
+
+        if (!project) return false;
+
+        if (this.hasGlobalProjectAccess(state)) {
+            return true;
+        }
+        
+        return !!project && project.memberIds.includes(currentUser.id);
+    }
+
+    async handleRoleAssignment(userId, role) {
+        const state = this.model.getState();
+        if (state.currentUser?.role !== 'Admin') return;
+
+        const response = await fetch(`/api/users/${userId}/role`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Failed to update role');
+        }
+
+        await this.model.loadData();
+    }
+
+    handleUserSwitch(userId) {
+        const changed = this.model.changeUser(userId);
+        if (changed){
+            localStorage.setItem('currentUserId', userId);
+            this.view.showToast('Switched active profile!');
+        }
+        // this.model.changeUser(userId);
+        // this.view.showToast('Switched active profile!');
+    }
+
+    enrichProjects(projects, tasks) {
+        return projects.map(project => {
+            const projectTasks = tasks.filter(task => task.projectId === project.id);
+            return {
+                ...project,
+                tasksCount: projectTasks.length,
+                completedTasksCount: projectTasks.filter(task => task.status === 'completed').length
+            };
+        });
+    }
+
+    renderDashboard(state = this.model.getState()) {
+        const { currentUser } = state;
+        if (!currentUser) return;
+
+        const visibleProjects = this.getVisibleProjects(state);
+        const visibleTasks = this.getVisibleTasks(state);
+
+        const totalProjects = visibleProjects.length;
+        const inProgressProjects = visibleProjects.filter(project => project.status === 'in_progress').length;
+        const completedTasksCount = visibleTasks.filter(task => task.status === 'completed').length;
+        const pendingTasksCount = visibleTasks.filter(task => task.status === 'pending').length;
+
+        this.view.renderDashboardStats({
+            totalProjects,
+            inProgressProjects,
+            completedTasks: completedTasksCount,
+            pendingTasks: pendingTasksCount
+        });
+
+        const myProjects = this.enrichProjects(visibleProjects, visibleTasks);
+        this.view.renderDashboardMyProjects(myProjects, (projId) => this.handleViewProjectDetail(projId));
+
+        const myPendingTasks = visibleTasks.filter(task => task.assigneeId === currentUser.id && task.status === 'pending');
+        this.view.renderDashboardMyTasks(
+            myPendingTasks,
+            visibleProjects,
+            (taskId) => this.handleTaskToggle(taskId),
+            (taskId) => this.handleTaskDelete(taskId)
+        );
+    }
+
+    renderProjectsList(state = this.model.getState()) {
+        const visibleProjects = this.getVisibleProjects(state);
+        this.view.renderProjectsGrid(
+            this.enrichProjects(visibleProjects, this.getVisibleTasks(state)),
+            (projId) => this.handleViewProjectDetail(projId),
+            this.projectSearch,
+            this.projectStatus
+        );
+    }
+
+    renderTasksList(state = this.model.getState()) {
+        const visibleTasks = this.getVisibleTasks(state);
+        this.view.renderTasksTable(
+            { ...state, tasks: visibleTasks },
+            (taskId) => this.handleTaskToggle(taskId),
+            (taskId) => this.handleTaskDelete(taskId),
+            this.taskSearch,
+            this.taskScope,
+            this.taskStatus,
+            this.taskPriority,
+            state.currentUser?.id
+        );
+    }
+
+    handleViewProjectDetail(projectId) {
+        const state = this.model.getState();
+        if (!this.canViewProject(projectId, state)) {
+            this.view.showToast('You do not have access to that project.');
+            return;
+        }
+
+        this.activeProjectId = projectId;
+        const project = state.projects.find(item => item.id === projectId);
+
+        if (project) {
+            this.view.renderProjectDetail(
+                project,
+                this.getVisibleTasks(state),
+                state.users,
+                (taskId) => this.handleTaskToggle(taskId),
+                (taskId) => this.handleTaskDelete(taskId)
+            );
+            this.view.showView('project-detail');
+        }
+    }
+
+    async handleTaskToggle(taskId) {
+        await this.taskController.handleTaskToggle(taskId);
+    }
+
+    async handleTaskDelete(taskId) {
+        await this.taskController.handleTaskDelete(taskId);
+    }
+}
+
+class ProjectManagerApp {
+    constructor() {
+        this.model = new AppModel();
+        this.view = new AppViewModular();
+        this.controller = new AppController(this.model, this.view);
+    }
+
+    async start() {
+        await this.controller.init();
+    }
+}
