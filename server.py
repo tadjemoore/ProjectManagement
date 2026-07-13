@@ -3,10 +3,25 @@ import re
 import urllib.parse
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import database
+from datetime import datetime
 
 PORT = 8000
 
 class APIRouter:
+    #TO-DO: add more helpers to simplify code
+    @staticmethod
+    def _get_user_role(conn, user_id):
+        cursor = conn.cursor()
+        cursor.execute("SELECT role FROM users WHERE id = ?", (user_id,))
+        row = cursor.fetchone()
+        return row['role'] if row else None
+    
+    @staticmethod
+    def _is_admin_or_manager(conn, user_id):
+        # Centralized role gate for destructive actions
+        role = APIRouter._get_user_role(conn, user_id)
+        return role in ['Admin', 'Manager']
+    
     @staticmethod
     def get_users(conn):
         cursor = conn.cursor()
@@ -45,7 +60,7 @@ class APIRouter:
         
         # Get projects with owner info
         cursor.execute("""
-            SELECT p.id, p.title, p.description, p.due_date, p.status, p.owner_id,
+            SELECT p.id, p.title, p.description, p.due_date, p.status, p.owner_id, p.created_at, p.updated_at,
                    u.name as owner_name, u.role as owner_role, u.avatar as owner_avatar
             FROM projects p
             JOIN users u ON p.owner_id = u.id
@@ -83,7 +98,9 @@ class APIRouter:
                     "role": row['owner_role'],
                     "avatar": row['owner_avatar']
                 },
-                "memberIds": project_members.get(proj_id, [])
+                "memberIds": project_members.get(proj_id, []),
+                "createdAt": row['created_at'],
+                "updatedAt": row['updated_at'],
             })
         return projects
 
@@ -126,9 +143,10 @@ class APIRouter:
 
         try:
             conn.execute("BEGIN")
+            now = datetime.now().isoformat(timespec='seconds')
             cursor.execute("""
-                INSERT INTO projects (id, title, description, due_date, status, owner_id)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO projects (id, title, description, due_date, status, owner_id, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 proj_id,
@@ -136,7 +154,9 @@ class APIRouter:
                 description,
                 due_date,
                 status,
-                owner_id
+                owner_id,
+                now,
+                now
             ))
 
             for user_id in cleaned_members:
@@ -236,7 +256,7 @@ class APIRouter:
     def get_tasks(conn):
         cursor = conn.cursor()
         cursor.execute("""
-            SELECT t.id, t.project_id, t.title, t.description, t.assignee_id, t.priority, t.due_date, t.status,
+            SELECT t.id, t.project_id, t.title, t.description, t.assignee_id, t.priority, t.due_date, t.status, t.created_at, t.updated_at,
                    u.name as assignee_name, u.role as assignee_role, u.avatar as assignee_avatar
             FROM tasks t
             LEFT JOIN users u ON t.assignee_id = u.id
@@ -257,18 +277,48 @@ class APIRouter:
                 } if row['assignee_id'] else None,
                 "priority": row['priority'],
                 "dueDate": row['due_date'],
-                "status": row['status']
+                "status": row['status'],
+                "createdAt": row['created_at'],
+                "updatedAt": row['updated_at']
             })
         return tasks
 
     @staticmethod
     def create_task(conn, data):
         cursor = conn.cursor()
+        project_id = (data.get("projectId") or "").strip()
+        acting_user_id = (data.get("actingUserId") or "").strip()
         task_id = "task-" + str(database.uuid.uuid4())[:8]
+        now = datetime.now().isoformat(timespec='seconds')
+
+        # validate requried task content
+        if not project_id:
+            return {"success": False, "status": 400, "error": "Project ID is required to create a task."}
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required to create a task."}
+        
+        # Fetch project owner for authorization check
+        cursor.execute("SELECT owner_id FROM projects WHERE id = ?", (project_id,))
+        project_row = cursor.fetchone()
+        if not project_row:
+            return {"success": False, "status": 404, "error": "Project not found."}
+        project_owner_id = project_row['owner_id']
+
+        # Fetch acting user role for authorization check
+        cursor.execute("SELECT role FROM users WHERE id = ?", (acting_user_id,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            return {"success": False, "status": 404, "error": "actingUserId not found."}
+        acting_user_role = user_row['role']
+
+        # Admin/Manager can manage all projects, employees can only manage their own projects
+        can_manage = acting_user_role in ['Admin', 'Manager'] or acting_user_id == project_owner_id
+        if not can_manage:
+            return {"success": False, "status": 403, "error": "User does not have permission to create tasks for this project."}
         
         cursor.execute("""
-            INSERT INTO tasks (id, project_id, title, description, assignee_id, priority, due_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO tasks (id, project_id, title, description, assignee_id, priority, due_date, status, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             task_id,
             data.get("projectId"),
@@ -277,12 +327,13 @@ class APIRouter:
             data.get("assigneeId"),
             data.get("priority", "medium"),
             data.get("dueDate", ""),
-            data.get("status", "pending")
+            data.get("status", "pending"),
+            now,
+            now
         ))
-        cursor.execute("SELECT * FROM tasks WHERE id = ?", (task_id,))
-        task_row = cursor.fetchone()
-        if task_row:
-            APIRouter.recalculate_project_status(conn, task_row['project_id'])
+
+        # Recalculate project status after task creation
+        APIRouter.recalculate_project_status(conn, project_id)
 
         conn.commit()
         return {"id": task_id, "success": True}
@@ -330,15 +381,37 @@ class APIRouter:
     @staticmethod
     def update_task(conn, task_id, data):
         cursor = conn.cursor()
-        
-        # Capture parent project_id before del
+        # Find task and parent project 
         cursor.execute("SELECT id, project_id FROM tasks WHERE id = ?", (task_id,))
         task_row = cursor.fetchone()
         if not task_row:
             return None
         
         project_id = task_row['project_id']
-            
+        acting_user_id = (data.get("actingUserId") or "").strip()
+
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required to update a task."}
+        
+        # Fetch project owner for authorization check
+        cursor.execute("SELECT owner_id FROM projects WHERE id = ?", (project_id,))
+        project_row = cursor.fetchone()
+        if not project_row:
+            return {"success": False, "status": 404, "error": "Project not found."}
+        
+        owner = project_row['owner_id']
+
+        # Fetch acting user role
+        cursor.execute("SELECT role FROM users WHERE id = ?", (acting_user_id,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            return {"success": False, "status": 404, "error": "actingUserId not found."}
+        
+        role = user_row['role']
+        can_manage = role in ['Admin', 'Manager'] or acting_user_id == owner
+        if not can_manage:
+            return {"success": False, "status": 403, "error": "User does not have permission to update tasks for this project."}
+    
         # Dynamically build update query based on fields provided
         update_fields = []
         params = []
@@ -356,32 +429,81 @@ class APIRouter:
             if data_key in data:
                 update_fields.append(f"{db_field} = ?")
                 params.append(data[data_key])
-                
-        if update_fields:
-            params.append(task_id)
-            query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = ?"
-            cursor.execute(query, params)
-
-            APIRouter.recalculate_project_status(conn, project_id)
-
-            conn.commit()
         
-        return {"id": task_id, "success": True}
+        # No-op update is still a successfuel authorization request
+        if not update_fields:
+            return {"id": task_id, "success": True}
+        
+        params.append(task_id)
+        query = f"UPDATE tasks SET {', '.join(update_fields)} WHERE id = ?"
+        cursor.execute(query, params)
 
+        # Keep project status in sync with task updates
+        APIRouter.recalculate_project_status(conn, project_id)
+        conn.commit()
+        return {"id": task_id, "success": True}
+    
     @staticmethod
-    def delete_task(conn, task_id):
+    def delete_project(conn, project_id, acting_user_id):
         cursor = conn.cursor()
 
-        # Capture parent project_id before deletion
+        acting_user_id = (acting_user_id or "").strip()
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required to delete a project."}
+        
+        # Only Admin/Manager can delete projects
+        if not APIRouter._is_admin_or_manager(conn, acting_user_id):
+            return {"success": False, "status": 403, "error": "Only Admins or Managers have permission to delete projects."}
+        
+        cursor.execute("SELECT id FROM projects WHERE id = ?", (project_id,))
+        if not cursor.fetchone():
+            return {"success": False, "status": 404, "error": "Project not found."}
+        
+        # Tasks and project_members cascade-delete throgh FK 
+        cursor.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+        conn.commit()
+        return {"id": project_id, "success": True}
+
+    @staticmethod
+    def delete_task(conn, task_id, acting_user_id):
+        cursor = conn.cursor()
+
+        # Validate acting user identity for authorization
+        acting_user_id = (acting_user_id or "").strip()
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required to delete a task."}
+        
+        # Load task and parent project for authorization check
         cursor.execute("SELECT project_id FROM tasks WHERE id = ?", (task_id,))
         task_row = cursor.fetchone()
-        project_id = task_row['project_id'] if task_row else None
-    
-        cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+        if not task_row:
+            return {"success": False, "status": 404, "error": "Task not found."}
         
-        #recalculate project status after deletion
-        if project_id:
-            APIRouter.recalculate_project_status(conn, project_id)
+        project_id = task_row['project_id']
+
+        # Fetch project owner
+        cursor.execute("SELECT owner_id FROM projects WHERE id = ?", (project_id,))
+        project_row = cursor.fetchone()
+        if not project_row:
+            return {"success": False, "status": 404, "error": "Project not found."}
+        
+        owner_id = project_row['owner_id']
+
+        # Fetch acting user role
+        cursor.execute("SELECT role FROM users WHERE id = ?", (acting_user_id,))
+        user_row = cursor.fetchone()
+        if not user_row:
+            return {"success": False, "status": 404, "error": "actingUserId not found."}
+        
+        role = user_row['role']
+        can_manage = role in ['Admin', 'Manager'] or acting_user_id == owner_id
+        if not can_manage:
+            return {"success": False, "status": 403, "error": "User does not have permission to delete tasks for this project."}
+        
+        cursor.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+
+        # Recalculate project status after task deletion
+        APIRouter.recalculate_project_status(conn, project_id)
 
         conn.commit()
         return {"id": task_id, "success": True}
@@ -624,6 +746,12 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
 
             elif self.path == "/api/tasks":
                 result = APIRouter.create_task(conn, data)
+
+                # Surface business/authorization errors cleanly
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid task payload")})
+                    return
+                
                 self.send_json_response(201, result)
 
             else:
@@ -663,7 +791,9 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
             elif task_match:
                 task_id = task_match.group(1)
                 result = APIRouter.update_task(conn, task_id, data)
-                if result:
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid task payload")})
+                elif result:
                     self.send_json_response(200, result)
                 else:
                     self.send_json_response(404, {"error": "Task not found"})
@@ -685,14 +815,42 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
 
     def handle_api_delete(self):
         conn = database.get_connection()
+
         try:
-            task_match = re.match(r"^/api/tasks/([^/]+)$", self.path)
+            # Parse query string so actingUserId can be sent with DELETE request
+            parsed = urllib.parse.urlparse(self.path)
+            query_params = urllib.parse.parse_qs(parsed.query)
+            acting_user_id = query_params.get("actingUserId", [""])[0]
+
+            task_match = re.match(r"^/api/tasks/([^/]+)$", parsed.path)
+            project_match = re.match(r"^/api/projects/([^/]+)$", parsed.path)
+
             if task_match:
                 task_id = task_match.group(1)
-                result = APIRouter.delete_task(conn, task_id)
-                self.send_json_response(200, result)
-            else:
-                self.send_json_response(404, {"error": "Not Found"})
+                result = APIRouter.delete_task(conn, task_id, acting_user_id)
+
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid delete request")})
+                elif result:
+                    self.send_json_response(200, result)
+                else:
+                    self.send_json_response(404, {"error": "Task not found"})
+                return
+            
+            if project_match:
+                project_id = project_match.group(1)
+                result = APIRouter.delete_project(conn, project_id, acting_user_id)
+
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid delete request")})
+                elif result:
+                    self.send_json_response(200, result)
+                else:
+                    self.send_json_response(404, {"error": "Project not found"})
+                return
+            
+            self.send_json_response(404, {"error": "Not Found"})
+
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})
         finally:

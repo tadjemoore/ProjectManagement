@@ -86,6 +86,10 @@ class AppModel {
         return this.projectModel.addProject(projectData);
     }
 
+    async deleteProject(projectId) {
+        return this.projectModel.deleteProject(projectId);
+    }
+
     async updateProjectStatus(projectId, status) {
         return this.projectModel.updateProjectStatus(projectId, status);
     }

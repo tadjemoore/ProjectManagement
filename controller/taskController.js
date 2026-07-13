@@ -24,6 +24,11 @@ class TaskController {
     }
 
     async handleCreateTask(taskData) {
+        const state = this.model.getState();
+
+        if (!this.appController.canManageProjectById(taskData.projectId, state)) {
+            throw new Error('You do not have permission to add tasks to this project.');
+        }
         return await this.model.addTask(taskData);
     }
 
@@ -32,6 +37,14 @@ class TaskController {
     }
 
     async handleTaskDelete(taskId) {
+        const state = this.model.getState();
+        const role = state.currentUser?.role;
+
+        // Only Admin/Manager can delete tasks
+        if (!['Admin', 'Manager'].includes(role)) {
+            throw new Error('You do not have permission to delete this task.');
+        }
+
         await this.model.deleteTask(taskId);
     }
 }

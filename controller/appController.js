@@ -106,10 +106,21 @@ class AppController {
 
         const state = this.model.getState();
         const project = state.projects.find(item => item.id === this.activeProjectId);
-        if (project) {
-            this.view.setupManageMembersModal(project, state.users);
-            this.view.openModal(this.view.manageMembersModal);
+
+        if (!project) {
+            this.view.showToast('Project not found.', 'error');
+            return;
         }
+
+
+        // authorize first, then open UI
+        if (!this.canManageProject(project, state)) {
+            this.view.showToast('Only project owners, managers, or admins can manage project members.', 'error');
+            return;
+        }
+
+        this.view.setupManageMembersModal(project, state.users);
+        this.view.openModal(this.view.manageMembersModal);
     }
 
     async openManageRolesModal() {
@@ -148,12 +159,18 @@ class AppController {
         if (this.activeProjectId) {
             const project = state.projects.find(item => item.id === this.activeProjectId);
             if (project) {
+                const canManageProject = this.canManageProject(project, state);
+                const role = state.currentUser?.role;
+                const canDeleteDangerActions = ['Admin', 'Manager'].includes(role);
+
                 this.view.renderProjectDetail(
                     project,
-                    state.tasks,
+                    this.getVisibleTasks(state),
                     state.users,
+                    // state.tasks,
                     (taskId) => this.handleTaskToggle(taskId),
-                    (taskId) => this.handleTaskDelete(taskId)
+                    (taskId) => this.handleTaskDelete(taskId),
+                    {canManageProject, canDeleteDangerActions, onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId)}
                 );
             }
         }
@@ -169,6 +186,27 @@ class AppController {
     hasGlobalProjectAccess(state = this.model.getState()) {
         const role = state.currentUser?.role;
         return role === 'Admin' || role === 'Manager';
+    }
+
+    canManageProject(project, state =this.model.getState()) {
+        const user = state.currentUser;
+        if (!user || !project) return false;
+
+        // Admins and Managers keep full control
+        if (this.hasGlobalProjectAccess(state)) return true;
+
+        // Employees can manage their own projects
+        if (user.role === 'Employee') {
+            return project.ownerId === user.id;
+        }
+
+        // Fallback 
+        return project.memberIds.includes(user.id);
+    }
+
+    canManageProjectById(projectId, state = this.model.getState()) {
+        const project = state.projects.find(p => p.id === projectId);
+        return this.canManageProject(project, state);
     }
 
     getVisibleProjects(state = this.model.getState()) {
@@ -322,12 +360,21 @@ class AppController {
         const project = state.projects.find(item => item.id === projectId);
 
         if (project) {
+            const canManageProject = this.canManageProject(project, state);
+            const role = state.currentUser?.role;
+            const canDeleteDangerActions = ['Admin', 'Manager'].includes(role);
+
             this.view.renderProjectDetail(
                 project,
                 this.getVisibleTasks(state),
                 state.users,
                 (taskId) => this.handleTaskToggle(taskId),
-                (taskId) => this.handleTaskDelete(taskId)
+                (taskId) => this.handleTaskDelete(taskId),
+                {
+                    canManageProject,
+                    canDeleteDangerActions, 
+                    onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId),
+                }
             );
             this.view.showView('project-detail');
         }

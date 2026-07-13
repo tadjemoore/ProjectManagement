@@ -43,6 +43,23 @@ class ProjectModel {
             throw error;
         }
     }
+    
+    async deleteProject(projectId) {
+        try {
+            const actingUserId = localStorage.getItem('currentUserId') || '';
+            // Pass acting user in query so backend can authorize the deletion
+            const query = `?actingUserId=${encodeURIComponent(actingUserId)}`;
+
+            await this.model.request(`/projects/${projectId}${query}`, {
+                method: 'DELETE'
+            });
+
+            await this.model.loadData();
+        } catch (error) {
+            console.error('Error deleting project:', error);
+            throw error;
+        }
+    }
 
     async updateProjectStatus(projectId, status) {
         try {

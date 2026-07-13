@@ -214,6 +214,12 @@
                             </div>
                         </div>
                         <div class="meta-item">
+                            <span class="meta-label">Created</span>
+                            <div class="meta-value date-display" id="projDetailCreatedDate">
+                                <i class="fa-regular fa-calendar-plus"></i> <span>-</span>
+                            </div>
+                        </div>
+                        <div class="meta-item">
                             <span class="meta-label">Due Date</span>
                             <div class="meta-value date-display" id="projDetailDueDate">
                                 <i class="fa-regular fa-calendar-check"></i> <span>2026-08-30</span>
@@ -254,6 +260,14 @@
                             <i class="fa-solid fa-circle-nodes"></i>
                             <p>No tasks created for this project yet.</p>
                             <button class="btn btn-secondary btn-sm" id="detailEmptyStateAddTaskBtn">Create First Task</button>
+                        </div>
+                        <div class="detail-danger-actions">
+                            <button class="btn btn-danger-outline hidden" id="detailDeleteTaskBtn" disabled>
+                                <i class="fa-solid fa-trash"></i> Delete Selected Task
+                            </button>
+                            <button class="btn btn-danger-outline hidden" id="detailDeleteProjectBtn">
+                                <i class="fa-solid fa-trash"></i> Delete Project
+                            </button>
                         </div>
                     </div>
                 </div>

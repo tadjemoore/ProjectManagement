@@ -393,6 +393,22 @@ body {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
+.btn-danger-outline {
+    background: transparent;
+    color: var(--color-danger);
+    border: 1px solid rgba(239, 68, 68, 0.45);
+}
+
+.btn-danger-outline:hover {
+    background-color: var(--color-danger-bg);
+    border-color: var(--color-danger);
+}
+
+.btn-danger-outline:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 /* --- Views & Views Toggling --- */
 .app-view {
     display: none;
@@ -596,6 +612,14 @@ body {
     overflow-y: auto;
 }
 
+.detail-danger-actions{
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
 /* --- Dashboard Lists Styling (Compact) --- */
 .projects-list-compact, .tasks-list-compact {
     display: flex;
@@ -663,6 +687,12 @@ body {
 .task-compact-info p {
     font-size: 11px;
     color: var(--text-muted);
+}
+
+.task-created-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
 }
 
 /* Custom Checkbox Design */

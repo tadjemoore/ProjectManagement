@@ -92,7 +92,10 @@ class AppViewModular {
             manageRolesForm: document.getElementById('manageRolesForm'),
             manageRolesUserSelect: document.getElementById('manageRolesUserSelect'),
             manageRolesSelect: document.getElementById('manageRolesSelect'),
-            toastNotification: document.getElementById('toastNotification')
+            toastNotification: document.getElementById('toastNotification'),
+            projDetailCreatedDate: document.getElementById('projDetailCreatedDate'),
+            detailDeleteTaskBtn: document.getElementById('detailDeleteTaskBtn'),
+            detailDeleteProjectBtn: document.getElementById('detailDeleteProjectBtn')
         };
     }
 
@@ -111,7 +114,7 @@ class AppViewModular {
     renderDashboardMyTasks(tasks, projects, onToggle, onDelete) { return this.dashboardView.renderDashboardMyTasks(tasks, projects, onToggle, onDelete); }
 
     renderProjectsGrid(projects, onProjectClick, searchVal = '', statusVal = 'all') { return this.projectView.renderProjectsGrid(projects, onProjectClick, searchVal, statusVal); }
-    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete) { return this.projectView.renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete); }
+    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, options ={}) { return this.projectView.renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, options); }
 
     renderTasksTable({ tasks, projects, users }, onToggle, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) { return this.taskView.renderTasksTable({ tasks, projects, users }, onToggle, onDelete, searchVal, scopeVal, statusVal, priorityVal, activeUserId); }
 

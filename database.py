@@ -89,6 +89,39 @@ def ensure_roles_table(cursor):
     cursor.execute("UPDATE roles SET is_signup_allowed = 0 WHERE name = 'Admin'")
     cursor.execute("UPDATE roles SET is_signup_allowed = 1 WHERE name IN ('Manager', 'Employee')")
 
+def ensure_audit_columns(cursor):
+    # Ensure projects.created_at exists
+    cursor.execute("PRAGMA table_info(projects)")
+    project_cols = {row[1] for row in cursor.fetchall()}
+    if "created_at" not in project_cols:
+        cursor.execute("ALTER TABLE projects ADD COLUMN created_at TEXT")
+        # Backfill existing rows so API responses always have a value
+        cursor.execute("UPDATE projects SET created_at = datetime('now') WHERE created_at IS NULL")
+
+    # Ensure projects.updated_at exists
+    cursor.execute("PRAGMA table_info(projects)")
+    project_cols = {row[1] for row in cursor.fetchall()}
+    if "updated_at" not in project_cols:
+        cursor.execute("ALTER TABLE projects ADD COLUMN updated_at TEXT")
+        # Backfill existing rows so API responses always have a value
+        cursor.execute("UPDATE projects SET updated_at = datetime('now') WHERE updated_at IS NULL")
+
+    # Ensure tasks.created_at exists
+    cursor.execute("PRAGMA table_info(tasks)")
+    task_cols = {row[1] for row in cursor.fetchall()}
+    if "created_at" not in task_cols:
+        cursor.execute("ALTER TABLE tasks ADD COLUMN created_at TEXT")
+        # Backfill existing rows so API responses always have a value
+        cursor.execute("UPDATE tasks SET created_at = datetime('now') WHERE created_at IS NULL")
+
+    # Ensure tasks.updated_at exists
+    cursor.execute("PRAGMA table_info(tasks)")
+    task_cols = {row[1] for row in cursor.fetchall()}
+    if "updated_at" not in task_cols:
+        cursor.execute("ALTER TABLE tasks ADD COLUMN updated_at TEXT")
+        # Backfill existing rows so API responses always have a value
+        cursor.execute("UPDATE tasks SET updated_at = datetime('now') WHERE updated_at IS NULL")
+
 def initialize_database():
     """Creates the schema tables and applies migrations if needed."""
     conn = get_connection()
@@ -106,6 +139,7 @@ def initialize_database():
     );
     """)
 
+    # Projects table with foreign key to users
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS projects (
         id TEXT PRIMARY KEY,
@@ -114,10 +148,13 @@ def initialize_database():
         due_date TEXT,
         status TEXT NOT NULL, -- 'not_started', 'in_progress', 'on_hold', 'completed'
         owner_id TEXT NOT NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')), -- timestamp of creation
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')), -- timestamp of last update
         FOREIGN KEY(owner_id) REFERENCES users(id) ON DELETE RESTRICT
     );
     """)
 
+    # Create project_members table to manage many-to-many relationship between projects and users
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS project_members (
         project_id TEXT,
@@ -128,6 +165,7 @@ def initialize_database():
     );
     """)
 
+    # Create tasks table with foreign keys to projects and users
     cursor.execute("""
     CREATE TABLE IF NOT EXISTS tasks (
         id TEXT PRIMARY KEY,
@@ -138,6 +176,8 @@ def initialize_database():
         priority TEXT NOT NULL, -- 'low', 'medium', 'high'
         due_date TEXT,
         status TEXT NOT NULL, -- 'pending', 'completed'
+        created_at TEXT NOT NULL DEFAULT (datetime('now')), -- timestamp of creation
+        updated_at TEXT NOT NULL DEFAULT (datetime('now')), -- timestamp of last update
         FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
         FOREIGN KEY(assignee_id) REFERENCES users(id) ON DELETE SET NULL
     );
@@ -145,7 +185,8 @@ def initialize_database():
 
     ensure_users_auth_columns(cursor)
     ensure_roles_table(cursor)
-
+    ensure_audit_columns(cursor)
+    
     conn.commit()
 
     conn.close()

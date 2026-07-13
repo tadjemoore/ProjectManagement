@@ -78,6 +78,12 @@ class EventView {
 
     bindProjectStatusChange(handler) {
         this.view.projectDetailStatusSelect.addEventListener('change', (e) => {
+            if (this.view.projectDetailStatusSelect.disabled) {
+                e.target.value = e.target.dataset.currentStatus || e.target.value;
+                this.view.showToast('You do not have permission to change the project status.', 'error');
+                return;
+            }
+
             if (this.view.activeProjectId) {
                 handler(this.view.activeProjectId, e.target.value);
                 this.view.showToast('Project status updated!');

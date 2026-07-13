@@ -75,13 +75,18 @@ class ProjectView {
         });
     }
 
-    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete) {
+    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, options = {}) {
         if (!project) return;
+
+        const canManageProject = !!options.canManageProject;
 
         this.view.activeProjectId = project.id;
         this.view.projectDetailStatusSelect.value = project.status;
-        this.view.projDetailTitle.textContent = project.title;
-        this.view.projDetailDesc.textContent = project.description || 'No description provided.';
+        this.view.projectDetailStatusSelect.dataset.currentStatus = project.status;
+        this.view.projectDetailStatusSelect.disabled = !canManageProject;
+
+        this.view.manageMembersBtn.classList.toggle('hidden', !canManageProject);
+        this.view.detailAddTaskBtn.classList.toggle('hidden', !canManageProject);
 
         const ownerInitials = this.view.getInitials(project.owner?.name);
         const ownerColor = this.view.getAvatarColor(project.owner?.name || 'Owner');
@@ -119,6 +124,7 @@ class ProjectView {
         if (totalTasks === 0) {
             this.view.projDetailTasksList.innerHTML = '';
             this.view.projTasksEmptyState.classList.remove('hidden');
+            this.view.detailEmptyStateAddTaskBtn.classList.toggle('hidden', !canManageProject);
         } else {
             this.view.projTasksEmptyState.classList.add('hidden');
             this.view.projDetailTasksList.innerHTML = projTasks.map(task => {
@@ -128,7 +134,7 @@ class ProjectView {
                 const isCompleted = task.status === 'completed';
 
                 return `
-                    <div class="project-task-item ${isCompleted ? 'task-completed' : ''}">
+                    <div class="project-task-item ${isCompleted ? 'task-completed' : ''}" data-task-id="${task.id}">
                         <div class="project-task-left">
                             <label class="checkbox-container">
                                 <input type="checkbox" class="task-check" data-id="${task.id}" ${isCompleted ? 'checked' : ''}>
@@ -168,5 +174,49 @@ class ProjectView {
                 });
             });
         }
+
+        const canDelete = ! !options.canDeleteDangerActions; //Admin/Manager can delete projects and tasks
+
+        this.view.projDetailTitle.textContent = project.title;
+        this.view.projDetailDesc.textContent = project.description || 'No description provided.';
+
+        //show project created date
+        this.view.projDetailCreatedDate.innerHTML = `<i class="fa-regular fa-calendar-plus"></i> <span>Created: ${project.createdAt || 'No Date'}</span>`;
+
+        // Show/hide danger button based on role
+        this.view.detailDeleteTaskBtn.classList.toggle('hidden', !canDelete);
+        this.view.detailDeleteProjectBtn.classList.toggle('hidden', !canDelete);
+
+        let selectedTaskId = null;
+        this.view.detailDeleteTaskBtn.disabled = true; // Initially disable the delete task button
+
+        // Ensure each row has data-task-id attribute for selection
+        // <div class="project-task-item" data-task-id="${task.id}"> in the task rendering above
+
+        // After rendering tasks
+        this.view.projDetailTasksList.querySelectorAll('.project-task-item').forEach(row => {
+            row.addEventListener('click', () => {
+                if (!canDelete) return; // Ignore selection if user cannot delete tasks
+
+                this.view.projDetailTasksList.querySelectorAll('.project-task-item').forEach(r => r.classList.remove('task-selected'));
+                row.classList.add('task-selected');
+                selectedTaskId = row.getAttribute('data-task-id');
+                this.view.detailDeleteTaskBtn.disabled = !selectedTaskId; // Enable delete button if a task is selected
+            });
+        });
+
+        this.view.detailDeleteTaskBtn.onclick = () => {
+            if (!selectedTaskId) return;
+
+            if (confirm('Are you sure you want to delete the selected task from this project?')) {
+                onTaskDelete(selectedTaskId);
+            }
+        };
+``
+        this.view.detailDeleteProjectBtn.onclick = () => {
+            if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
+                options.onProjectDelete(project.id);
+            }
+        };
     }
 }

@@ -5,6 +5,7 @@ class TaskModel {
 
     async addTask({ projectId, title, description, assigneeId, priority, dueDate }) {
         try {
+            const actingUserId = localStorage.getItem('currentUserId') || '';
             const result = await this.model.request('/tasks', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -15,7 +16,8 @@ class TaskModel {
                     assigneeId: assigneeId || null,
                     priority,
                     dueDate,
-                    status: 'pending'
+                    status: 'pending',
+                    actingUserId // Include the acting user ID in the request
                 })
             });
 
@@ -35,10 +37,11 @@ class TaskModel {
             }
 
             const newStatus = task.status === 'completed' ? 'pending' : 'completed';
+            const actingUserId = localStorage.getItem('currentUserId') || '';
             await this.model.request(`/tasks/${taskId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
+                body: JSON.stringify({ status: newStatus, actingUserId }) // Include the acting user ID in the request
             });
 
             await this.model.loadData();
@@ -50,7 +53,12 @@ class TaskModel {
 
     async deleteTask(taskId) {
         try {
-            await this.model.request(`/tasks/${taskId}`, { method: 'DELETE' });
+            // Send actor identity so backend can authorize the deletion
+            const actingUserId = localStorage.getItem('currentUserId') || '';
+            const query = `?actingUserId=${encodeURIComponent(actingUserId)}`;
+
+            // Build endpoint string with task id and query params
+            await this.model.request(`/tasks/${taskId}${query}`, { method: 'DELETE' });
             await this.model.loadData();
         } catch (error) {
             console.error('Error deleting task:', error);
