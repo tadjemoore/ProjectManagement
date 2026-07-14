@@ -1,5 +1,7 @@
 async function loadPartial(filePath) {
-    const response = await fetch(filePath);
+    // Cache buster to fetch latest partial html
+    const versionedPath = `${filePath}?v=20260714b`;
+    const response = await fetch(versionedPath, { cache: 'no-store' });
     if (!response.ok) {
         throw new Error(`Failed to load partial: ${filePath}`);
     }

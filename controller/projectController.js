@@ -46,5 +46,13 @@ class ProjectController {
         }
 
         await this.model.deleteProject(projectId);
+
+        // clear stale active detail context after deletion
+        this.appController.activeProjectId = null;
+
+        // return user to project list view after deletion
+        this.view.showView('projects');
+
+        this.view.showToast('Project deleted successfully!');
     }
 }

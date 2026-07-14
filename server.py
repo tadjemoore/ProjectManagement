@@ -113,7 +113,9 @@ class APIRouter:
         due_date = (data.get("dueDate") or "").strip()
         status = (data.get("status") or "not_started").strip()
         owner_id = (data.get("ownerId") or "").strip()
+
         raw_members = data.get("memberIds", [])
+        raw_tasks = data.get("initialTasks", [])
 
         if not title:
             return {"success": False, "status": 400, "error": "Project title is required."}
@@ -126,6 +128,11 @@ class APIRouter:
         
         if not isinstance(raw_members, list):
             return {"success": False, "status": 400, "error": "memberIds must be a list."}
+        
+        if raw_tasks is None:
+            raw_tasks = []
+        if not isinstance(raw_tasks, list):
+            return {"success": False, "status": 400, "error": "initialTasks must be a list."}
         
         cleaned_members = []
         seen = set()
@@ -144,6 +151,8 @@ class APIRouter:
         try:
             conn.execute("BEGIN")
             now = datetime.now().isoformat(timespec='seconds')
+
+            # Create project
             cursor.execute("""
                 INSERT INTO projects (id, title, description, due_date, status, owner_id, created_at, updated_at)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -159,12 +168,48 @@ class APIRouter:
                 now
             ))
 
+            # Create Project Members
             for user_id in cleaned_members:
                 cursor.execute("""
                     INSERT INTO project_members (project_id, user_id)
                     VALUES (?, ?)
                 """, (proj_id, user_id))
+
+            # Create seed tasks in same transaction
+            for task in raw_tasks:
+                task_title = (task.get("title") or "").strip()
+                if not task_title:
+                    continue  # Skip tasks without a title
+                task_description = (task.get("description") or "").strip()
+                task_assignee_id = (task.get("assigneeId") or "").strip()
+                task_priority = (task.get("priority") or "medium").strip()
+                task_due_date = (task.get("dueDate") or "").strip()
+                
+                if task_priority not in ['low', 'medium', 'high']:
+                    task_priority = 'medium'  # Default to medium if invalid
+
+                if task_assignee_id and task_assignee_id not in cleaned_members:
+                    task_assignee_id = None
+
+                task_id = "task-" + str(database.uuid.uuid4())[:8]
+                cursor.execute("""
+                    INSERT INTO tasks (id, project_id, title, description, assignee_id, priority, due_date, status, created_at, updated_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    task_id,
+                    proj_id,
+                    task_title,
+                    task_description,
+                    task_assignee_id,
+                    task_priority,
+                    task_due_date,
+                    'pending',
+                    now,
+                    now
+                ))
+                
             conn.commit()
+
         except Exception:
             conn.rollback()
             raise

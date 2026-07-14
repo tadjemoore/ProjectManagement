@@ -29,20 +29,20 @@ class NavigationController {
         const openAddTaskModal = (defaultProjectId = null) => {
             const state = this.model.getState();
             const manageableProjects = state.projects.filter(p => this.appController.canManageProjectById(p.id, state));
-            // use requested project when allowed, otherwise default to first allowed project
-            const selectedProjectId = defaultProjectId && manageableProjects.some(p => p.id === defaultProjectId) ? defaultProjectId : manageableProjects[0].id;
-
-            // if user is in project detail, block modal nless they can manage the project
-            if (this.appController.activeProjectId && !this.appController.canManageProjectById(this.appController.activeProjectId, state)) {
-                this.view.showToast('You do not have permission to add tasks to this project.', 'error');
-                return;
-            }
-
             // only allow selecting projects the user can manage
             if (!manageableProjects.length) {
                 this.view.showToast('You do not have permission to add tasks to any project.', 'error');
                 return;
             }
+
+            // if user is in project detail, block modal unless they can manage the project
+            if (this.appController.activeProjectId && !this.appController.canManageProjectById(this.appController.activeProjectId, state)) {
+                this.view.showToast('You do not have permission to add tasks to this project.', 'error');
+                return;
+            }
+
+            // use requested project when allowed, otherwise default to first allowed project
+            const selectedProjectId = defaultProjectId && manageableProjects.some(p => p.id === defaultProjectId) ? defaultProjectId : manageableProjects[0].id;
 
             this.view.populateProjectSelector(manageableProjects, selectedProjectId);
             this.view.populateAssigneeSelector(state.users);

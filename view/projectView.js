@@ -213,9 +213,16 @@ class ProjectView {
             }
         };
 ``
-        this.view.detailDeleteProjectBtn.onclick = () => {
+        this.view.detailDeleteProjectBtn.onclick = async () => {
+            if (!options.onDeleteProject) return;
+            
             if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
-                options.onProjectDelete(project.id);
+                try {
+                    await options.onDeleteProject(project.id);
+                    this.view.showToast('Project deleted successfully!');
+                } catch (error) {
+                    this.view.showToast(error?.message || 'Failed to delete project', 'error');
+                }
             }
         };
     }

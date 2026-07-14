@@ -3,7 +3,7 @@ class ProjectModel {
         this.model = model;
     }
 
-    async addProject({ title, description, dueDate, memberIds }) {
+    async addProject({ title, description, dueDate, memberIds, initialTasks = [] }) {
         try {
             const currentUserId = this.model.getState().currentUser?.id;
             const safeTitle = (title || '').trim();
@@ -23,6 +23,8 @@ class ProjectModel {
                 uniqueMemberIds.push(String(currentUserId));
             }
 
+            const safeInitialTasks = Array.isArray(initialTasks) ? initialTasks : [];
+
             const result = await this.model.request('/projects', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -32,7 +34,8 @@ class ProjectModel {
                     dueDate: dueDate || '',
                     status: 'not_started',
                     ownerId: currentUserId,
-                    memberIds: uniqueMemberIds
+                    memberIds: uniqueMemberIds,
+                    initialTasks: safeInitialTasks
                 })
             });
 

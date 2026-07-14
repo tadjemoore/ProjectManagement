@@ -99,6 +99,7 @@ class AppController {
         }
 
         this.view.populateProjectMembersCheckbox(state.users, 'projectMembersCheckboxGrid');
+        this.view.openModal(this.view.createProjectModal);
     }
 
     openManageMembersModal() {
@@ -158,6 +159,7 @@ class AppController {
 
         if (this.activeProjectId) {
             const project = state.projects.find(item => item.id === this.activeProjectId);
+
             if (project) {
                 const canManageProject = this.canManageProject(project, state);
                 const role = state.currentUser?.role;
@@ -167,11 +169,18 @@ class AppController {
                     project,
                     this.getVisibleTasks(state),
                     state.users,
-                    // state.tasks,
                     (taskId) => this.handleTaskToggle(taskId),
                     (taskId) => this.handleTaskDelete(taskId),
-                    {canManageProject, canDeleteDangerActions, onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId)}
+                    {
+                        canManageProject, 
+                        canDeleteDangerActions, 
+                        onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId)
+                    }
                 );
+            } else {
+                this.activeProjectId = null;
+                this.view.showView('projects');
+                this.view.showToast('Project deleted successfully or no longer exists.', 'info');
             }
         }
     }

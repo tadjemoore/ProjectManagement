@@ -31,6 +31,30 @@
                     <label class="form-label">Assign Project Members</label>
                     <div class="members-checkbox-grid" id="projectMembersCheckboxGrid"></div>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Project Tasks (Optional)</label>
+                    <p class="modal-instruction-text">Add tasks for this project here.</p>
+
+                    <div id="projectSeedTasksContainer" class="project-seed-tasks">
+                        <div class="project-seed-task-row">
+                            <input type="text" class="form-input seed-task-title" placeholder="Task Title">
+                            <input type="text" class="form-input seed-task-desc" placeholder="Task Description (Optional)">
+                            <select class="form-select seed-task-assignee">
+                                <option value="">Unassigned</option>
+                            </select>
+                            <select class="form-select seed-task-priority">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                            <input type="date" class="form-input seed-task-due-date">
+                            <button type="button" class="btn btn-secondary btn-sm remove-seed-task-btn" title="Remove Task">&times;</button>
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary btn-sm" id="addProjectSeedTaskBtn">
+                        Add Task
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancelCreateProjectBtn">Cancel</button>

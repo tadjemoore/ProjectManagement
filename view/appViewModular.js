@@ -95,7 +95,9 @@ class AppViewModular {
             toastNotification: document.getElementById('toastNotification'),
             projDetailCreatedDate: document.getElementById('projDetailCreatedDate'),
             detailDeleteTaskBtn: document.getElementById('detailDeleteTaskBtn'),
-            detailDeleteProjectBtn: document.getElementById('detailDeleteProjectBtn')
+            detailDeleteProjectBtn: document.getElementById('detailDeleteProjectBtn'),
+            addProjectSeedTaskBtn: document.getElementById('addProjectSeedTaskBtn'),
+            projectSeedTasksContainer: document.getElementById('projectSeedTasksContainer'),
         };
     }
 
