@@ -5,38 +5,38 @@
 
 /* --- CSS Variables & Design Tokens --- */
 :root {
-    --bg-primary: #0a0c16;
-    --bg-secondary: #111424;
-    --bg-panel: rgba(21, 26, 48, 0.7);
+    --bg-primary: #0f1419;
+    --bg-secondary: #161d24;
+    --bg-panel: rgba(27, 36, 46, 0.78);
     --bg-card: rgba(28, 35, 65, 0.55);
     --bg-card-hover: rgba(36, 45, 84, 0.75);
     
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-color-hover: rgba(255, 255, 255, 0.18);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --border-color-hover: rgba(255, 255, 255, 0.22);
     --border-accent: rgba(59, 130, 246, 0.3);
     
     /* Neon Accents */
-    --color-primary: #4f46e5;       /* Indigo */
-    --color-primary-glow: rgba(79, 70, 229, 0.4);
-    --color-secondary: #06b6d4;     /* Cyan */
-    --color-secondary-glow: rgba(6, 182, 212, 0.4);
+    --color-primary: #ff7d00;       /* Orange */
+    --color-primary-glow: rgba(255, 125, 0, 0.35);
+    --color-secondary: #4f6d8a;     /* Cyan */
+    --color-secondary-glow: rgba(79, 109, 138, 0.35);
     
     /* Functional Colors */
-    --color-success: #10b981;       /* Emerald */
-    --color-success-bg: rgba(16, 185, 129, 0.1);
+    --color-success: #22c55e;       /* Emerald */
+    --color-success-bg: rgba(34, 197, 94, 0.12);
     --color-warning: #f59e0b;       /* Amber */
-    --color-warning-bg: rgba(245, 158, 11, 0.1);
+    --color-warning-bg: rgba(245, 158, 11, 0.14);
     --color-danger: #ef4444;        /* Rose */
-    --color-danger-bg: rgba(239, 68, 68, 0.1);
+    --color-danger-bg: rgba(239, 68, 68, 0.12);
     --color-info: #3b82f6;          /* Blue */
-    --color-info-bg: rgba(59, 130, 246, 0.1);
+    --color-info-bg: rgba(59, 130, 246, 0.12);
     --color-neutral: #64748b;       /* Slate */
-    --color-neutral-bg: rgba(100, 116, 139, 0.1);
+    --color-neutral-bg: rgba(100, 116, 139, 0.12);
 
     /* Typography Colors */
-    --text-main: #f8fafc;
-    --text-muted: #94a3b8;
-    --text-dark: #64748b;
+    --text-main: #f5f7fa;
+    --text-muted: #9aa9b8;
+    --text-dark: #6d7f90;
     
     /* Layout & Effects */
     --sidebar-width: 280px;
@@ -113,22 +113,33 @@ body {
     gap: 12px;
 }
 
+.brand-logo-image {
+    width: 34px;
+    height: 34px;
+    object-fit: cover;
+}
+
+/* .brand-mark-svg{
+    width: 22px;
+    height: 22px;
+    fill: var(--color-primary);
+    filter: drop-shadow(0 1px 6px var(--color-primary-glow));
+}
+
 .brand-icon {
     font-size: 24px;
     background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     filter: drop-shadow(0 2px 8px var(--color-primary-glow));
-}
+} */
 
 .brand-name {
     font-family: 'Outfit', sans-serif;
     font-size: 22px;
     font-weight: 700;
-    letter-spacing: 1px;
-    background: linear-gradient(100deg, #ffffff, var(--text-muted));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
+    letter-spacing: 0.6px;
+    color: #f5f7fa;
 }
 
 .sidebar-nav {
@@ -159,9 +170,9 @@ body {
 
 .nav-item.active {
     color: var(--text-main);
-    background: linear-gradient(90deg, rgba(79, 70, 229, 0.15), rgba(6, 182, 212, 0.03));
+    background: linear-gradient(90deg, rgba(225, 125, 0, 0.18), rgba(79, 109, 138, 0.08));
     border-left: 3px solid var(--color-primary);
-    box-shadow: inset 0 0 12px rgba(79, 70, 229, 0.1);
+    box-shadow: inset 0 0 12px rgba(225, 125, 0, 0.18);
 }
 
 .nav-icon {

@@ -1,3 +1,7 @@
+import os
+import base64
+import hashlib
+import hmac
 import json
 import re
 import urllib.parse
@@ -6,6 +10,59 @@ import database
 from datetime import datetime
 
 PORT = 8000
+
+# PBKDF2 parameters high iteration count for security
+PBKDF2_ALGORITHM = 'sha256'
+PBKDF2_ITERATIONS = 210000
+PBKDF2_SALT_BYTES = 16
+PBKDF2_DK_BYTES = 32
+
+def hash_password(password):
+    #random salt per password
+    salt = os.urandom(PBKDF2_SALT_BYTES)
+
+    # Derive secure key from password and salt
+    dk = hashlib.pbkdf2_hmac(
+        PBKDF2_ALGORITHM,
+        password.encode('utf-8'),
+        salt,
+        PBKDF2_ITERATIONS,
+        dklen=PBKDF2_DK_BYTES
+    )
+
+    # STore as versioned string for future upgrades
+    salt_b64 = base64.b64encode(salt).decode('ascii')
+    dk_b64 = base64.b64encode(dk).decode('ascii')
+    return f"pbkdf2${PBKDF2_ALGORITHM}${PBKDF2_ITERATIONS}${salt_b64}${dk_b64}"
+
+def verify_password(password, stored_hash):
+    # handle missing values safefully
+    if not stored_hash:
+        return False
+    
+    # Backwards compatible parsing of stored hash
+    # Remove after migrgation
+    if not stored_hash.startswith("pbkdf2$"):
+        # Legacy hash format, fallback to simple comparison
+        return hmac.compare_digest(password, stored_hash)
+    
+    try:
+        _, algorithm, iterations_str, salt_b64, dk_b64 = stored_hash.split('$', 4)
+        iterations = int(iterations_str)
+        salt = base64.b64decode(salt_b64.encode('ascii'))
+        expected = base64.b64decode(dk_b64.encode('ascii'))
+    except Exception:
+        return False  # Invalid hash format
+    
+    actual = hashlib.pbkdf2_hmac(
+        algorithm,
+        password.encode('utf-8'),
+        salt,
+        iterations,
+        dklen=len(expected)
+    )
+    return hmac.compare_digest(actual, expected)
+
 
 class APIRouter:
     #TO-DO: add more helpers to simplify code
@@ -207,7 +264,7 @@ class APIRouter:
                     now,
                     now
                 ))
-                
+
             conn.commit()
 
         except Exception:
@@ -573,9 +630,16 @@ class APIRouter:
 
         stored_password_hash = row["password_hash"] or ""
 
-        if stored_password_hash != password:
+        # verify password using PBKDF2 or fallback to legacy comparison
+        if not verify_password(password, stored_password_hash):
             return None
         
+        # if still in plain text, upgrade to PBKDF2 hash for future logins
+        if stored_password_hash and not stored_password_hash.startswith("pbkdf2$"):
+            cursor = conn.cursor()
+            cursor.execute("UPDATE users SET password_hash = ? WHERE id = ?", (hash_password(password), row["id"]))
+            conn.commit()
+
         return {
             "id": row["id"],
             "name": row["name"],
@@ -616,6 +680,8 @@ class APIRouter:
         user_id = "user-" + str(database.uuid.uuid4())[:8]
         avatar = "".join(part[0] for part in name.split() if part)[:2].upper()
         
+        password_hash = hash_password(password)
+
         cursor.execute("""
             INSERT INTO users (id, name, role, avatar, username, password_hash)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -625,7 +691,7 @@ class APIRouter:
             role,
             avatar,
             username,
-            password
+            password_hash
         ))
         conn.commit()
         return {
