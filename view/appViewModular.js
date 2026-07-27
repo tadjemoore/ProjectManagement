@@ -140,6 +140,7 @@ class AppViewModular {
     setTaskDetailsEditMode(isEditing){ return this.modalView.setTaskDetailsEditMode(isEditing); }
     collectTaskDetailsFormData() { return this.modalView.collectTaskDetailsFormData(); }
     openEditProjectModal(project, users) { return this.modalView.openEditProjectModal(project, users); }
+    collectEditProjectData() {return this.modalView.collectEditProjectData(); }
 
 
     renderDashboardStats(stats) { return this.dashboardView.renderDashboardStats(stats); }

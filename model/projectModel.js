@@ -96,10 +96,11 @@ class ProjectModel {
 
     async updateProject(projectId, updates) {
         try {
+            const actingUserId = localStorage.getItem('currentUserId') || '';
             const result = await this.model.request(`/projects/${projectId}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({updates})
+                body: JSON.stringify({ ...updates, actingUserId })
             });
 
             await this.model.loadData();

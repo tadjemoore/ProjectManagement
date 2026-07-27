@@ -383,8 +383,8 @@ class AppController {
                 this.getVisibleTasks(state),
                 state.users,
                 (taskId) => this.handleTaskToggle(taskId),
-                (taskId) => this.handleTaskClick(taskId),
                 (taskId) => this.handleTaskDelete(taskId),
+                (taskId) => this.handleTaskClick(taskId),
                 {
                     canManageProject,
                     canDeleteDangerActions, 
