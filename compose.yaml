@@ -1,11 +1,17 @@
 services:
   rhino-pumps-app:
     build:
-    context: . # build from repo on NAS
-    dockerfile: Dockerfile
+      context: . # build from repo on NAS
+      dockerfile: Dockerfile
+      # Use the following line to build from a remote GitHub repo instead of local files
+      # image: ghcr.io/tadjemoore/ProjectManagement:latest
+  
   container_name: rhino-pumps-app
+  
   ports:
-    - "8080:5000" # NAS port: Container port
+    - "8000:8000" # NAS port: Container port
+  
   volumes:
     - ./nas-data:/data # Persistent app data on the NAS
+  
   restart: unless-stopped

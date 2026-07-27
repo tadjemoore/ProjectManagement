@@ -8,7 +8,7 @@ __pycache__/
 *.pyo
 
 # do not bake local DB into image
-projects.db
+#projects.db
 
 # Local editor/system clutter
 .vscode/

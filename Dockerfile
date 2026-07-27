@@ -14,7 +14,7 @@ COPY . /app
 RUN mkdir -p /data
 
 # expose port the server will run on
-EXPOSE 8080
+EXPOSE 8000
 
 # start application
 CMD ["python", "server.py"]
