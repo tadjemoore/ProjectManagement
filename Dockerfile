@@ -11,7 +11,8 @@ WORKDIR /app
 COPY . /app
 
 # enure persistent data directory exists inside container
-RUN mkdir -p /data
+ # RUN mkdir -p /data or projects.db?
+VOLUME ["/data"]
 
 # expose port the server will run on
 EXPOSE 8000

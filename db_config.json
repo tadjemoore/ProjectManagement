@@ -1,5 +1,5 @@
 {
+    "_comment": "change to nas_db_path for NAS deployment, or db_path for local deployment",
     "db_path": "projects.db",
-    "_comment1": "/data/projects.db",
-    "_comment2": "Use /data inside Docker so SQLite persists in the mounted NAS volume. For local development, you can use a relative path like 'projects.db'."
+    "nas_db_path": "/data/projects.db"
 }

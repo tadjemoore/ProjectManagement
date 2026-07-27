@@ -1,5 +1,7 @@
 services:
   rhino-pumps-app:
+  # remove build: section
+  # NAS should not be building the image, it should be pulling from Docker Hub
     build:
       context: . # build from repo on NAS
       dockerfile: Dockerfile
@@ -12,6 +14,7 @@ services:
     - "8000:8000" # NAS port: Container port
   
   volumes:
+    # Should data change to Projects.db? Or should it be a directory for multiple files?
     - ./nas-data:/data # Persistent app data on the NAS
   
   restart: unless-stopped

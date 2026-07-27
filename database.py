@@ -4,6 +4,7 @@ import json
 import uuid
 
 # Configuration file for Database path (easy to redirect to NAS)
+# need an easy way to change DB path for NAS and to DEV easily by changin one variable instaed of changing code in multiple places
 CONFIG_FILE = "db_config.json"
 DEFAULT_DB_PATH = "projects.db"
 
