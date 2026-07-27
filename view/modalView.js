@@ -17,7 +17,7 @@ class ModalView {
 
     setupManageMembersModal(project, users) {
         this.view.manageMembersProjectId.value = project.id;
-        this.view.populateProjectMembersCheckbox(users, 'manageMembersCheckboxGrid');
+        this.populateProjectMembersCheckbox(users, 'manageMembersCheckboxGrid');
 
         this.view.manageMembersCheckboxGrid.querySelectorAll('input[type="checkbox"]').forEach(box => {
             if (project.memberIds.includes(box.value)) {
@@ -46,5 +46,113 @@ class ModalView {
         this.view.manageRolesSelect.innerHTML = roles.map(role =>
             `<option value="${role}">${role}</option>`
         ).join('');
+    }
+
+    openTaskDetails(task, users) {
+        this.view.taskDetailsTaskId.value = task.id;
+        this.view.taskDetailsTitleInput.value = task.title || '';
+        this.view.taskDetailsDescriptionInput.value = task.description || '';
+        if ('value' in this.view.taskDetailsProject){
+            this.view.taskDetailsProject.value = task.projectTitle || 'External Task';
+        } else {
+            this.view.taskDetailsProject.textContent = task.projectTitle || 'External Task';
+        }
+        this.view.taskDetailsDueDateInput.value = task.dueDate || '';
+        this.view.taskDetailsStatusSelect.value = task.status || 'pending';
+        this.view.taskDetailsPrioritySelect.value = task.priority || 'medium';
+        
+        const assigneeOptions = ['<option value="">Unassigned</option>'];
+        users.forEach(user => {assigneeOptions.push(`<option value="${user.id}">${user.name} (${user.role})</option>`);});
+        this.view.taskDetailsAssigneeSelect.innerHTML = assigneeOptions.join('');
+        this.view.taskDetailsAssigneeSelect.value = task.assigneeId || '';
+        
+        this.setTaskDetailsEditMode(false);
+        this.view.openModal(this.view.taskDetailsModal);
+        // this.setTaskDetailsEditMode(false);
+        // const canEdit = !!task.canEdit;
+        // this.view.taskDetailsEditBtn.classList.toggle('hidden', !canEdit);
+        
+        // this.view.openModal(this.view.taskDetailsModal);
+
+        // this.view.taskDetailsTitle.textContent = task.title;
+        // this.view.taskDetailsDescription.textContent = task.description || 'No description';
+        // this.view.taskDetailsProject.textContent = task.projectTitle || 'External Task';
+        // this.view.taskDetailsAssignee.textContent = assignee ? assignee.name : 'Unassigned';
+        // this.view.taskDetailsPriority.textContent = task.priority;
+        // this.view.taskDetailsDueDate.textContent = task.dueDate || 'No date';
+        // this.view.taskDetailsStatus.textContent = task.status || 'No status';
+        // this.view.openModal(this.view.taskDetailsModal);
+    }
+
+    setTaskDetailsEditMode(isEditing) {
+        this.view.taskDetailsTitleInput.readOnly = !isEditing;
+        this.view.taskDetailsDescriptionInput.readOnly = !isEditing;
+        this.view.taskDetailsDueDateInput.readOnly = !isEditing;
+
+        this.view.taskDetailsAssigneeSelect.disabled = !isEditing;
+        this.view.taskDetailsStatusSelect.disabled = !isEditing;
+        this.view.taskDetailsPrioritySelect.disabled = !isEditing;
+
+        this.view.taskDetailsEditBtn.classList.toggle('hidden', isEditing);
+        this.view.taskDetailsCancelEditBtn.classList.toggle('hidden', !isEditing);
+        this.view.taskDetailsSaveBtn.classList.toggle('hidden', !isEditing);
+    }
+
+    collectTaskDetailsFormData() {
+        return {
+            taskId: this.view.taskDetailsTaskId.value,
+            title: this.view.taskDetailsTitleInput.value.trim(),
+            description: this.view.taskDetailsDescriptionInput.value.trim(),
+            assigneeId: this.view.taskDetailsAssigneeSelect.value || null,
+            status: this.view.taskDetailsStatusSelect.value,
+            priority: this.view.taskDetailsPrioritySelect.value,
+            dueDate: this.view.taskDetailsDueDateInput.value || ''
+        };
+    }
+    
+    openEditProjectModal(project, users) {
+        this.view.editProjectId.value = project.id;
+        this.view.editProjectTitle.value = project.title || '';
+        this.view.editProjectDescription.value = project.description || '';
+        this.view.editProjectDueDate.value = project.dueDate || '';
+
+        if(!this.view.editModalProjectOwnerDisplay || !this.view.editProjectMembersCheckboxGrid) {
+            throw new error ('Edit Project modal is missing required owner or members elements.');
+        }
+        
+        // Render read only owner badge so editor knows who owns the project
+        const ownerInitials = this.view.getInitials(project.owner?.name);
+        const ownerColor = this.view.getAvatarColor(project.owner?.name || 'Owner');
+        this.view.editModalProjectOwnerDisplay.innerHTML = `<div class="avatar avatar-sm" style="background: ${ownerColor}">${ownerInitials}</div>
+            <span>${project.owner?.name || 'Unknown'} (${project.owner?.role || 'Unknown'})</span>`;
+        
+        this.populateProjectMembersCheckbox(users, 'editProjectMembersCheckboxGrid');
+
+        // Pre-check member already assigned to the project
+        this.view.editProjectMembersCheckboxGrid.querySelectorAll('input[type="checkbox"]').forEach(box => {
+            if (project.memberIds.includes(box.value)) {
+                box.checked = true;
+            } 
+        });
+
+        this.view.openModal(this.view.editProjectModal);
+
+    }
+
+    collectEditProjectData() {
+        const memberIds = [];
+
+        // Collect all checked members from the edit modal
+        this.view.editProjectMembersCheckboxGrid.querySelectorAll('input[type="checkbox"]:checked').forEach(box => {
+            memberIds.push(box.value);
+        });
+
+        return {
+            projectId: this.view.editProjectId.value,
+            title: this.view.editProjectTitle.value.trim(),
+            description: this.view.editProjectDescription.value.trim(),
+            dueDate: this.view.editProjectDueDate.value,
+            memberIds
+        };
     }
 }

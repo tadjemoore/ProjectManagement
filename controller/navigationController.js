@@ -63,11 +63,18 @@ class NavigationController {
         this.view.closeManageMembersModalBtn.addEventListener('click', closeMembersModal);
         this.view.cancelManageMembersBtn.addEventListener('click', closeMembersModal);
 
-        if (this.view.closeManageRolesModalBtn) {
-            const closeRolesModal = () => this.view.closeModal(this.view.manageRolesModal);
-            this.view.closeManageRolesModalBtn.addEventListener('click', closeRolesModal);
-            this.view.cancelManageRolesBtn.addEventListener('click', closeRolesModal);
-        }
+        const closeRolesModal = () => this.view.closeModal(this.view.manageRolesModal);
+        this.view.closeManageRolesModalBtn.addEventListener('click', closeRolesModal);
+        this.view.cancelManageRolesBtn.addEventListener('click', closeRolesModal);
+
+        const closeTaskDetailsModal = () => this.view.closeModal(this.view.taskDetailsModal);
+        this.view.closeTaskDetailsModalBtn?.addEventListener('click', closeTaskDetailsModal);
+        this.view.closeTaskDetailsBtn?.addEventListener('click', closeTaskDetailsModal);
+        // if (this.view.closeManageRolesModalBtn) {
+        //     const closeRolesModal = () => this.view.closeModal(this.view.manageRolesModal);
+        //     this.view.closeManageRolesModalBtn.addEventListener('click', closeRolesModal);
+        //     this.view.cancelManageRolesBtn.addEventListener('click', closeRolesModal);
+        // }
     }
 
     handleNavigation(targetView) {

@@ -98,6 +98,10 @@ class AppModel {
         return this.projectModel.updateProjectMembers(projectId, memberIds);
     }
 
+    async updateProject(projectId, updates) {
+        return this.projectModel.updateProject(projectId, updates);
+    }
+
     async addTask(taskData) {
         return this.taskModel.addTask(taskData);
     }
@@ -108,5 +112,8 @@ class AppModel {
 
     async deleteTask(taskId) {
         return this.taskModel.deleteTask(taskId);
+    }
+    async updateTask(taskId, updates) {
+        return this.taskModel.updateTask(taskId, updates);
     }
 }

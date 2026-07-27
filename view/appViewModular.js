@@ -98,6 +98,32 @@ class AppViewModular {
             detailDeleteProjectBtn: document.getElementById('detailDeleteProjectBtn'),
             addProjectSeedTaskBtn: document.getElementById('addProjectSeedTaskBtn'),
             projectSeedTasksContainer: document.getElementById('projectSeedTasksContainer'),
+            taskDetailsModal: document.getElementById('taskDetailsModal'),
+            closeTaskDetailsModalBtn: document.getElementById('closeTaskDetailsModalBtn'),
+            closeTaskDetailsBtn: document.getElementById('closeTaskDetailsBtn'),
+            taskDetailsForm: document.getElementById('taskDetailsForm'),
+            taskDetailsTaskId: document.getElementById('taskDetailsTaskId'),
+            taskDetailsTitleInput: document.getElementById('taskDetailsTitleInput'),
+            taskDetailsDescriptionInput: document.getElementById('taskDetailsDescriptionInput'),
+            taskDetailsProject: document.getElementById('taskDetailsProject'),
+            taskDetailsAssigneeSelect: document.getElementById('taskDetailsAssigneeSelect'),
+            taskDetailsStatusSelect: document.getElementById('taskDetailsStatusSelect'),
+            taskDetailsPrioritySelect: document.getElementById('taskDetailsPrioritySelect'),
+            taskDetailsDueDateInput: document.getElementById('taskDetailsDueDateInput'),
+            taskDetailsEditBtn: document.getElementById('taskDetailsEditBtn'),
+            taskDetailsCancelEditBtn: document.getElementById('taskDetailsCancelEditBtn'),
+            taskDetailsSaveBtn: document.getElementById('taskDetailsSaveBtn'),
+            detailEditProjectBtn: document.getElementById('detailEditProjectBtn'),
+            editProjectModal: document.getElementById('editProjectModal'),
+            closeEditProjectModalBtn: document.getElementById('closeEditProjectModalBtn'),
+            cancelEditProjectBtn: document.getElementById('cancelEditProjectBtn'),
+            editProjectForm: document.getElementById('editProjectForm'),
+            editProjectId: document.getElementById('editProjectId'),
+            editProjectTitle: document.getElementById('editProjectTitle'),
+            editProjectDescription: document.getElementById('editProjectDescription'),
+            editProjectDueDate: document.getElementById('editProjectDueDate'),
+            editModalProjectOwnerDisplay: document.getElementById('editModalProjectOwnerDisplay'),
+            editProjectMembersCheckboxGrid: document.getElementById('editProjectMembersCheckboxGrid'),
         };
     }
 
@@ -110,15 +136,20 @@ class AppViewModular {
     showToast(message, type = 'success') { return this.commonView.showToast(message, type); }
     renderUserSwitcher(users, activeUserId) { return this.commonView.renderUserSwitcher(users, activeUserId); }
     renderActiveUser(user) { return this.commonView.renderActiveUser(user); }
+    openTaskDetails(task, users) { return this.modalView.openTaskDetails(task, users); }
+    setTaskDetailsEditMode(isEditing){ return this.modalView.setTaskDetailsEditMode(isEditing); }
+    collectTaskDetailsFormData() { return this.modalView.collectTaskDetailsFormData(); }
+    openEditProjectModal(project, users) { return this.modalView.openEditProjectModal(project, users); }
+
 
     renderDashboardStats(stats) { return this.dashboardView.renderDashboardStats(stats); }
     renderDashboardMyProjects(projects, onProjectClick) { return this.dashboardView.renderDashboardMyProjects(projects, onProjectClick); }
     renderDashboardMyTasks(tasks, projects, onToggle, onDelete) { return this.dashboardView.renderDashboardMyTasks(tasks, projects, onToggle, onDelete); }
 
     renderProjectsGrid(projects, onProjectClick, searchVal = '', statusVal = 'all') { return this.projectView.renderProjectsGrid(projects, onProjectClick, searchVal, statusVal); }
-    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, options ={}) { return this.projectView.renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, options); }
+    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, onTaskClick, options ={}) { return this.projectView.renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, onTaskClick, options); }
 
-    renderTasksTable({ tasks, projects, users }, onToggle, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) { return this.taskView.renderTasksTable({ tasks, projects, users }, onToggle, onDelete, searchVal, scopeVal, statusVal, priorityVal, activeUserId); }
+    renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) { return this.taskView.renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal, scopeVal, statusVal, priorityVal, activeUserId); }
 
     populateProjectSelector(projects, activeProjectId = null) { return this.modalView.populateProjectSelector(projects, activeProjectId); }
     populateAssigneeSelector(users) { return this.modalView.populateAssigneeSelector(users); }
@@ -135,4 +166,6 @@ class AppViewModular {
     bindProjectMembersSave(handler) { return this.eventView.bindProjectMembersSave(handler); }
     bindRoleAssignmentSave(handler) { return this.eventView.bindRoleAssignmentSave(handler); }
     bindFilters(onProjectFilter, onTaskFilter) { return this.eventView.bindFilters(onProjectFilter, onTaskFilter); }
+    bindTaskDetailsEvents(onSave) {return this.eventView.bindTaskDetailsEvents(onSave); }
+    bindEditProject(handler) { return this.eventView.bindEditProject(handler); }
 }

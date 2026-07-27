@@ -64,6 +64,50 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="editProjectModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Edit Project</h3>
+            <button class="modal-close-btn" id="closeEditProjectModalBtn">&times;</button>
+        </div>
+
+        <form id="editProjectForm">
+            <input type="hidden" id="editProjectId">
+            
+            <div class="modal-body">
+                
+                <div class="form-group">
+                    <label for="editProjectTitle" class="form-label required">Project Title</label>
+                    <input type="text" id="editProjectTitle" class="form-input" placeholder="e.g., Q3 Analytics API Setup" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="editProjectDescription" class="form-label">Description</label>
+                    <textarea id="editProjectDescription" class="form-input form-textarea" placeholder="Explain the project goal and key objectives..."></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-6">
+                        <label for="editProjectDueDate" class="form-label">Due Date</label>
+                        <input type="date" id="editProjectDueDate" class="form-input">
+                    </div>
+                </div>
+
+                <div class="form-group col-6">
+                    <label class="form-label">Project Owner</label>
+                    <div class="read-only-owner-badge" id="editModalProjectOwnerDisplay">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelEditProjectBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="modal-overlay" id="addTaskModal">
     <div class="modal-card">
         <div class="modal-header">
@@ -113,6 +157,76 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="taskDetailsModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Task Details</h3>
+            <button class="modal-close-btn" id="closeTaskDetailsModalBtn">&times;</button>
+        </div>
+        <form id="taskDetailsForm">
+            <input type="hidden" id="taskDetailsTaskId">
+
+            <div class="modal-body" id="taskDetailsContent">
+                <div class="form-row">
+                <div class="form-group col-6">
+                    <label class="form-label">Task</label>
+                    <input type="text" id="taskDetailsTitleInput" class="form-input" readonly required>
+                </div>
+
+                <div class="form-group col-6">
+                    <label class="form-label">Project</label>
+                    <input type="text" id="taskDetailsProject" class="form-input" readonly>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="taskDetailsDescriptionInput" class="form-input form-textarea" readonly></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-4">
+                    <label class="form-label">Assignee</label>
+                    <select id="taskDetailsAssigneeSelect" class="form-select" disabled>
+                        <option value="">Unassigned</option>
+                    </select>
+                </div>
+
+                <div class="form-group col-4">
+                    <label class="form-label">Status</label>
+                    <select id="taskDetailsStatusSelect" class="form-select" disabled>
+                        <option value="pending">Pending</option>
+                        <option value="completed">Completed</option>
+                    </select>
+                </div>
+
+                <div class="form-group col-4">
+                    <label class="form-label">Priority</label>
+                    <select id="taskDetailsPrioritySelect" class="form-select" disabled>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-4">
+                    <label class="form-label">Due Date</label>
+                    <input type="date" id="taskDetailsDueDateInput" class="form-input" readonly>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="closeTaskDetailsBtn">Close</button>
+            <button type="button" class="btn btn-secondary" id="taskDetailsEditBtn">Edit Task</button>
+            <button type="button" class="btn btn-secondary hidden" id="taskDetailsCancelEditBtn">Cancel Edit</button>
+            <button type="submit" class="btn btn-primary hidden" id="taskDetailsSaveBtn">Save Changes</button>
+        </div>
+    </form>
+</div>
+
 <div class="modal-overlay" id="manageMembersModal">
     <div class="modal-card">
         <div class="modal-header">
@@ -122,12 +236,14 @@
         <form id="manageMembersForm">
             <input type="hidden" id="manageMembersProjectId">
             <div class="modal-body">
-                <p class="modal-instruction-text">Select the team members participating in this project. Project members can be assigned tasks within this project.</p>
+                <p class="modal-instruction-text">
+                    Select users to assign to this project. Project members can be assigned tasks within this project.
+                </p>
                 <div class="members-checkbox-grid" id="manageMembersCheckboxGrid"></div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancelManageMembersBtn">Cancel</button>
-                <button type="submit" class="btn btn-primary">Save Changes</button>
+                <button type="submit" class="btn btn-primary">Save Members</button>
             </div>
         </form>
     </div>

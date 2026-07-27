@@ -75,7 +75,7 @@ class ProjectView {
         });
     }
 
-    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, options = {}) {
+    renderProjectDetail(project, tasks, users, onTaskToggle, onTaskDelete, onTaskClick, options = {}) {
         if (!project) return;
 
         const canManageProject = !!options.canManageProject;
@@ -83,8 +83,9 @@ class ProjectView {
         this.view.activeProjectId = project.id;
         this.view.projectDetailStatusSelect.value = project.status;
         this.view.projectDetailStatusSelect.dataset.currentStatus = project.status;
+        
+        this.view.detailEditProjectBtn.classList.toggle('hidden', !canManageProject);
         this.view.projectDetailStatusSelect.disabled = !canManageProject;
-
         this.view.manageMembersBtn.classList.toggle('hidden', !canManageProject);
         this.view.detailAddTaskBtn.classList.toggle('hidden', !canManageProject);
 
@@ -166,7 +167,8 @@ class ProjectView {
             });
 
             this.view.projDetailTasksList.querySelectorAll('.btn-delete-task').forEach(btn => {
-                btn.addEventListener('click', () => {
+                btn.addEventListener('click', (event) => {
+                    event.stopPropagation(); // Prevent the row click event from firing
                     const id = btn.getAttribute('data-id');
                     if (confirm('Are you sure you want to delete this task from this project?')) {
                         onTaskDelete(id);
@@ -195,33 +197,42 @@ class ProjectView {
 
         // After rendering tasks
         this.view.projDetailTasksList.querySelectorAll('.project-task-item').forEach(row => {
-            row.addEventListener('click', () => {
-                if (!canDelete) return; // Ignore selection if user cannot delete tasks
+            row.addEventListener('click', (event) => {
+                // Prevent toggling the checkbox from triggering the row click
+                if (
+                    event.target.closest('.btn-delete-task') ||
+                    event.target.closest('.task-check') ||
+                    event.target.closest('.checkbox-container') ||
+                    event.target.closest('.checkmark')
+                ) {
+                    return;
+                }
 
-                this.view.projDetailTasksList.querySelectorAll('.project-task-item').forEach(r => r.classList.remove('task-selected'));
-                row.classList.add('task-selected');
-                selectedTaskId = row.getAttribute('data-task-id');
-                this.view.detailDeleteTaskBtn.disabled = !selectedTaskId; // Enable delete button if a task is selected
+                if (canDelete) {
+                    this.view.projDetailTasksList.querySelectorAll('.project-task-item').forEach(r => r.classList.remove('task-selected'));
+
+                    row.classList.add('task-selected');
+                    selectedTaskId = row.getAttribute('data-task-id');
+                    this.view.detailDeleteTaskBtn.disabled = !selectedTaskId; // Enable the delete task button
+                }
+
+                const taskId = row.getAttribute('data-task-id');
+                if (taskId && typeof onTaskClick === 'function') {
+                    onTaskClick(taskId);
+                }
             });
         });
 
-        this.view.detailDeleteTaskBtn.onclick = () => {
-            if (!selectedTaskId) return;
-
-            if (confirm('Are you sure you want to delete the selected task from this project?')) {
-                onTaskDelete(selectedTaskId);
-            }
-        };
-``
+        // Wire project delete button so it always points at the currently selected project
         this.view.detailDeleteProjectBtn.onclick = async () => {
             if (!options.onDeleteProject) return;
-            
+
             if (confirm('Are you sure you want to delete this project? This action cannot be undone.')) {
                 try {
                     await options.onDeleteProject(project.id);
-                    this.view.showToast('Project deleted successfully!');
+                    this.view.showToast('Project deleted successfully.', 'success');
                 } catch (error) {
-                    this.view.showToast(error?.message || 'Failed to delete project', 'error');
+                    this.view.showToast('Failed to delete project.', 'error');
                 }
             }
         };

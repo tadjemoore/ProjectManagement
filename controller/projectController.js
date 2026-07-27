@@ -9,6 +9,7 @@ class ProjectController {
         this.view.bindCreateProject((projectData) => this.handleCreateProject(projectData));
         this.view.bindProjectStatusChange((projId, status) => this.handleProjectStatusChange(projId, status));
         this.view.bindProjectMembersSave((projId, memberIds) => this.handleProjectMembersSave(projId, memberIds));
+        this.view.bindEditProject((projectData) => this.handleEditProject(projectData));
     }
 
     async handleCreateProject(projectData) {
@@ -54,5 +55,31 @@ class ProjectController {
         this.view.showView('projects');
 
         this.view.showToast('Project deleted successfully!');
+    }
+
+    async handleEditProject(projectData) {
+        const state = this.model.getState();
+        const project = state.projects.find(p => p.id === projectData.projectId);
+
+        if (!project) {
+            throw new Error('Project not found.');
+        }
+
+        if (!this.appController.canManageProject(project, state)) {
+            throw new Error('You do not have permission to edit this project.');
+        }
+
+        if (!projectData.title) {
+            throw new Error('Project title cannot be empty.');
+        }
+
+        // Send all editable project fields back to the model.
+        await this.model.updateProject(projectData.projectId, {
+            title: projectData.title,
+            description: projectData.description,
+            dueDate: projectData.dueDate,
+            memberIds: projectData.memberIds,
+            actingUserId: state.currentUser.id
+        });
     }
 }

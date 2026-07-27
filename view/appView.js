@@ -78,7 +78,8 @@ class AppView {
             manageMembersForm: document.getElementById('manageMembersForm'),
             manageMembersProjectId: document.getElementById('manageMembersProjectId'),
             manageMembersCheckboxGrid: document.getElementById('manageMembersCheckboxGrid'),
-            toastNotification: document.getElementById('toastNotification')
+            toastNotification: document.getElementById('toastNotification'),
+            addTaskModal: document.getElementById('addTaskModal'),
         };
     }
 

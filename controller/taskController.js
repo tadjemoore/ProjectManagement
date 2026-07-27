@@ -7,6 +7,7 @@ class TaskController {
 
     init() {
         this.view.bindCreateTask((taskData) => this.handleCreateTask(taskData));
+        this.view.bindTaskDetailsEvents((taskData) => this.handleTaskEdit(taskData));
         this.view.bindFilters(
             (search, status) => {
                 this.appController.projectSearch = search;
@@ -46,5 +47,37 @@ class TaskController {
         }
 
         await this.model.deleteTask(taskId);
+    }
+
+    async handleTaskEdit(taskData){
+        // locate target task in front end
+        const state = this.model.getState();
+        const task = state.tasks.find(t => t.id === taskData.taskId);
+
+        if (!task) {
+            throw new Error('Task not found.');
+        }
+
+        if (!this.appController.canManageProjectById(task.projectId, state)) {
+            throw new Error('You do not have permission to edit this task.');
+        }
+        
+        const title = (taskData.title || '').trim();
+        if (!title) {
+            throw new Error('Task title cannot be empty.');
+        }
+        const allowedStatus = ['pending', 'completed'];
+        if (!allowedStatus.includes(taskData.status)) {
+            throw new Error(`Invalid task status: ${taskData.status}`);
+        }
+
+        await this.model.updateTask(taskData.taskId, {
+            title,
+            description: (taskData.description || '').trim(),
+            assigneeId: taskData.assigneeId,
+            status: taskData.status,
+            priority: taskData.priority,
+            dueDate: taskData.dueDate,
+        });
     }
 }

@@ -1,0 +1,16 @@
+# git metadata should not be on image
+.git
+.gitignore
+
+# local python cache files are not needed in image
+__pycache__/
+*.pyc
+*.pyo
+
+# do not bake local DB into image
+projects.db
+
+# Local editor/system clutter
+.vscode/
+.DS_Store
+Thumbs.db

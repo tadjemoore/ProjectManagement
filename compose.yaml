@@ -1,0 +1,11 @@
+services:
+  rhino-pumps-app:
+    build:
+    context: . # build from repo on NAS
+    dockerfile: Dockerfile
+  container_name: rhino-pumps-app
+  ports:
+    - "8080:5000" # NAS port: Container port
+  volumes:
+    - ./nas-data:/data # Persistent app data on the NAS
+  restart: unless-stopped

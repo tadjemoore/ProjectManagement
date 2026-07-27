@@ -3,7 +3,7 @@ class TaskView {
         this.view = viewContext;
     }
 
-    renderTasksTable({ tasks, projects, users }, onToggle, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) {
+    renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) {
         const query = searchVal.toLowerCase().trim();
 
         const filtered = tasks.filter(task => {
@@ -35,7 +35,7 @@ class TaskView {
             const assigneeName = assignee ? assignee.name : 'Unassigned';
 
             return `
-                <tr>
+                <tr class="task-row" data-task-id="${task.id}">
                     <td>
                         <label class="checkbox-container">
                             <input type="checkbox" class="task-check" data-id="${task.id}" ${task.status === 'completed' ? 'checked' : ''}>
@@ -69,11 +69,29 @@ class TaskView {
         });
 
         this.view.globalTasksTableBody.querySelectorAll('.btn-delete-task').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (event) => {
+                event.stopPropagation(); // Prevent the row click event from firing
                 const id = btn.getAttribute('data-id');
                 if (confirm('Are you sure you want to delete this task?')) {
                     onDelete(id);
                 }
+            });
+        });
+
+        this.view.globalTasksTableBody.querySelectorAll('.task-row').forEach(row => {
+            row.addEventListener('click', (event) => {
+                // Ignore clicks fom delete button or any checkboxes to avoid opening the task details modal
+                if (
+                    event.target.closest('.btn-delete-task') ||
+                    event.target.closest('.task-check') ||
+                    event.target.closest('.checkbox-container') ||
+                    event.target.closest('.checkmark')
+                ) {
+                    return;
+                }
+                
+                const taskId = row.getAttribute('data-task-id');
+                onTaskClick(taskId);
             });
         });
     }

@@ -264,4 +264,76 @@ class EventView {
         this.view.taskStatusFilter.addEventListener('change', runTaskFilter);
         this.view.taskPriorityFilter.addEventListener('change', runTaskFilter);
     }
+
+    bindTaskDetailsEvents(onSave) {
+        const closeModal = () => {
+            this.view.setTaskDetailsEditMode(false);
+            this.view.closeModal(this.view.taskDetailsModal);
+        };
+
+        this.view.closeTaskDetailsModalBtn?.addEventListener('click', closeModal);
+        this.view.closeTaskDetailsBtn?.addEventListener('click', closeModal);
+
+        this.view.taskDetailsEditBtn?.addEventListener('click', () => {
+            this.view.setTaskDetailsEditMode(true);
+        });
+
+        this.view.taskDetailsCancelEditBtn?.addEventListener('click', () => {
+            this.view.setTaskDetailsEditMode(false);
+        });
+
+        this.view.taskDetailsForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const taskData = this.view.collectTaskDetailsFormData();
+
+            if (!taskData.title) {
+                this.view.showToast('Task title is required', 'error');
+                return;
+            }
+
+            try{
+                await onSave(taskData);
+                this.view.setTaskDetailsEditMode(false);
+                this.view.closeModal(this.view.taskDetailsModal);
+                this.view.showToast('Task details updated successfully!');
+            } catch (error) {
+                this.view.showToast(error?.message || 'Failed to update task details', 'error');
+            }
+        });
+    }
+
+    bindEditProject(handler) {
+        const closeModal = () => this.view.closeModal(this.view.editProjectModal);
+
+        this.view.detailEditProjectBtn?.addEventListener('click', () => {
+            const state = this.view.appController?.model?.getState?.();
+            const activeProjectId = this.view.activeProjectId;
+            const activeProject = state?.projects?.find(project => project.id === activeProjectId);
+
+            if (!activeProject) {
+                this.view.showToast('No active project found to edit.', 'error');
+                return;
+            }
+
+            // Open the edit modal with the currently selected project and all users.
+            this.view.openEditProjectModal(activeProject, state.users);
+        });
+
+        this.view.closeEditProjectModalBtn?.addEventListener('click', closeModal);
+        this.view.cancelEditProjectBtn?.addEventListener('click', closeModal);
+
+        this.view.editProjectForm?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const projectData = this.view.collectEditProjectData();
+
+            try {
+                await handler(projectData);
+                this.view.closeModal(this.view.editProjectModal);
+                this.view.showToast('Project updated successfully!');
+            } catch (error) {
+                this.view.showToast(error?.message || 'Failed to update project', 'error');
+            }
+        });
+    }
 }

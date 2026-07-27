@@ -65,4 +65,19 @@ class TaskModel {
             throw error;
         }
     }
+    async updateTask(taskId, updates) {
+        try {
+            const actingUserId = localStorage.getItem('currentUserId') || '';
+            await this.model.request(`/tasks/${taskId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ ...updates, actingUserId })
+            });
+
+            await this.model.loadData();
+        } catch (error) {
+            console.error('Error updating task:', error);
+            throw error;
+        }
+    }
 }

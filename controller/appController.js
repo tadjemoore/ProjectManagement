@@ -2,6 +2,7 @@ class AppController {
     constructor(model, view) {
         this.model = model;
         this.view = view;
+        this.view.appController = this;
 
         this.projectSearch = '';
         this.projectStatus = 'all';
@@ -171,6 +172,7 @@ class AppController {
                     state.users,
                     (taskId) => this.handleTaskToggle(taskId),
                     (taskId) => this.handleTaskDelete(taskId),
+                    (taskId) => this.handleTaskClick(taskId),
                     {
                         canManageProject, 
                         canDeleteDangerActions, 
@@ -193,11 +195,13 @@ class AppController {
     }
 
     hasGlobalProjectAccess(state = this.model.getState()) {
+        // Use can manage/viewl alll projects/tasks based on role
         const role = state.currentUser?.role;
         return role === 'Admin' || role === 'Manager';
     }
 
     canManageProject(project, state =this.model.getState()) {
+        // Controls UI level edit permissions
         const user = state.currentUser;
         if (!user || !project) return false;
 
@@ -349,6 +353,7 @@ class AppController {
         this.view.renderTasksTable(
             { ...state, tasks: visibleTasks },
             (taskId) => this.handleTaskToggle(taskId),
+            (taskId) => this.handleTaskClick(taskId),
             (taskId) => this.handleTaskDelete(taskId),
             this.taskSearch,
             this.taskScope,
@@ -378,6 +383,7 @@ class AppController {
                 this.getVisibleTasks(state),
                 state.users,
                 (taskId) => this.handleTaskToggle(taskId),
+                (taskId) => this.handleTaskClick(taskId),
                 (taskId) => this.handleTaskDelete(taskId),
                 {
                     canManageProject,
@@ -395,6 +401,25 @@ class AppController {
 
     async handleTaskDelete(taskId) {
         await this.taskController.handleTaskDelete(taskId);
+    }
+
+    async handleTaskClick(taskId) {
+        const state = this.model.getState();
+        const task = state.tasks.find(t => t.id === taskId);
+
+        if (!task) {
+            this.view.showToast('Task not found.', 'error');
+            return;
+        }
+
+        const project = state.projects.find(p => p.id === task.projectId);
+        const taskForModal = {
+            ...task,
+            projectTitle: project ? project.title : 'External Task',
+            canEdit: this.canManageProjectById(task.projectId, state)
+        }
+
+        this.view.openTaskDetails(taskForModal, state.users);
     }
 }
 

@@ -93,4 +93,20 @@ class ProjectModel {
             throw error;
         }
     }
+
+    async updateProject(projectId, updates) {
+        try {
+            const result = await this.model.request(`/projects/${projectId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({updates})
+            });
+
+            await this.model.loadData();
+            return result;
+        } catch (error) {
+            console.error('Error updating project:', error);
+            throw error;
+        }
+    }
 }
