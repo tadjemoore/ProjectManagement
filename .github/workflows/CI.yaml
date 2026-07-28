@@ -78,24 +78,24 @@ jobs:
           docker build -t $DOCKER_USERNAME/$DOCKER_REPOSITORY:$IMAGE_TAG -f Dockerfile .
           docker push $DOCKER_USERNAME/$DOCKER_REPOSITORY:$IMAGE_TAG
     
-  deploy-to-nas:
-    runs-on: ubuntu-latest
-    needs: build-and-push-docker-image
-    steps:
-      - name: Deploy to NAS
-        uses: appleboy/ssh-action@v1
-        with:
-          host: ${{ secrets.NAS_HOST }}
-          username: ${{ secrets.NAS_USERNAME }}
-          password: ${{ secrets.NAS_TOKEN }}
-          port: ${{ secrets.NAS_PORT }}
-          script: |
-            cd /volume1/docker/rhino-pumps-app
+  # deploy-to-nas:
+  #   runs-on: ubuntu-latest
+  #   needs: build-and-push-docker-image
+  #   steps:
+  #     - name: Deploy to NAS
+  #       uses: appleboy/ssh-action@v1
+  #       with:
+  #         host: ${{ secrets.NAS_HOST }}
+  #         username: ${{ secrets.NAS_USERNAME }}
+  #         password: ${{ secrets.NAS_TOKEN }}
+  #         port: ${{ secrets.NAS_PORT }}
+  #         script: |
+  #           cd /volume1/docker/rhino-pumps-app
 
-            echo "Backing up database..."
-            cp data/app.db backups/app-$(date +%Y%m%d%H%M%S).db
+  #           echo "Backing up database..."
+  #           cp data/app.db backups/app-$(date +%Y%m%d%H%M%S).db
 
-            docker compose pull
-            docker compose up -d
-            echo "Deployment complete."
-            docker image prune -f
+  #           docker compose pull
+  #           docker compose up -d
+  #           echo "Deployment complete."
+  #           docker image prune -f
