@@ -9,6 +9,7 @@ on:
     #   - 'main'
     branches:
       - 'main'
+      
   workflow_dispatch:
  
 # Prevent the action from running when a new branch is created.
