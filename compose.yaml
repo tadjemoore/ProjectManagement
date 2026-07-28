@@ -15,6 +15,7 @@ services:
   
   volumes:
     # Should data change to Projects.db? Or should it be a directory for multiple files?
-    - /volume1/docker/rhino-pumps-app:/data # Persistent app data on the NAS
+    - /volume1/RhinoNAS/docker/rhino-pumps-app/data:/data # NAS path: Container path
+    - /volume1/RhinoNAS/docker/rhino-pumps-app/logs:/app/logs # NAS path: Container path
   
   restart: unless-stopped
