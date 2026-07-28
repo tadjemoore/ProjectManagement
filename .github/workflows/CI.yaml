@@ -70,7 +70,8 @@ jobs:
         id: build
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_REPOSITORY: ${{ needs.variables.outputs.RepositoryName }}
+          DOCKER_REPOSITORY: rhino-pumps-app
+          # DOCKER_REPOSITORY: ${{ needs.variables.outputs.RepositoryName }}
           IMAGE_TAG: ${{ needs.variables.outputs.Version }}
         run: |
           echo "Building and pushing Docker image: $DOCKER_USERNAME/$DOCKER_REPOSITORY:$IMAGE_TAG"  
