@@ -3,7 +3,7 @@ run-name: By @${{ github.actor }}
 
 on:
   push:
-    branches-ignore:
+    branches:
       - 'main'
 
   workflow_dispatch:
