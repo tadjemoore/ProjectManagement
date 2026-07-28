@@ -1,5 +1,5 @@
 {
     "_comment": "change to nas_db_path for NAS deployment, or db_path for local deployment",
-    "comment":"db_path projects.db",
-    "db_path": "/data/projects.db"
+    "db_path":"db_path projects.db",
+    "db_path1": "/data/projects.db"
 }
