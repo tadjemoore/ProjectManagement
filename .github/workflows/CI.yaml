@@ -3,13 +3,13 @@ run-name: By @${{ github.actor }}
 
 on:
   push:
-    # branches:
-    #   - 'deploy'
+    branches:
+      - 'deploy'
     # branches-ignore:
     #   - 'main'
-    branches:
-      - 'main'
-      
+    # branches:
+    #   - 'main'
+
   workflow_dispatch:
  
 # Prevent the action from running when a new branch is created.
