@@ -1,19 +1,19 @@
 services:
-  rhino-pumps-app:
+  rhino-projects-server:
   # remove build: section
   # NAS should not be building the image, it should be pulling from Docker Hub
-    image: rhino-pumps-app:1.0.0
+    image: rhino-projects-server:latest
       # Use the following line to build from a remote GitHub repo instead of local files
       # image: ghcr.io/tadjemoore/ProjectManagement:latest
   
-    container_name: rhino-pumps-app
+    container_name: rhino-projects-server
   
     ports:
       - "8000:8000" # NAS port: Container port
   
     volumes:
       # Should data change to Projects.db? Or should it be a directory for multiple files?
-      - /volume1/RhinoNAS/docker/rhino-pumps-app/data:/data # NAS path: Container path
-      - /volume1/RhinoNAS/docker/rhino-pumps-app/logs:/app/logs # NAS path: Container path
+      - /volume1/RhinoNAS/docker/rhino-projects-server/data:/data # NAS path: Container path
+      - /volume1/RhinoNAS/docker/rhino-projects-server/logs:/app/logs # NAS path: Container path
   
     restart: unless-stopped

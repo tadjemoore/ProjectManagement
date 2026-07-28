@@ -69,7 +69,7 @@ jobs:
         id: build
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_REPOSITORY: rhino-pumps-app
+          DOCKER_REPOSITORY: rhino-projects-server
           # DOCKER_REPOSITORY: ${{ needs.variables.outputs.RepositoryName }}
           IMAGE_TAG: ${{ needs.variables.outputs.Version }}
         run: |
@@ -89,7 +89,7 @@ jobs:
   #         password: ${{ secrets.NAS_TOKEN }}
   #         port: ${{ secrets.NAS_PORT }}
   #         script: |
-  #           cd /volume1/docker/rhino-pumps-app
+  #           cd /volume1/docker/rhino-projects-server
 
   #           echo "Backing up database..."
   #           cp data/app.db backups/app-$(date +%Y%m%d%H%M%S).db
