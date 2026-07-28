@@ -20,7 +20,7 @@ jobs:
     outputs:
       Version: ${{ steps.gitversion.outputs.SemVer }}
       CommitsSinceVersionSource: ${{ steps.gitversion.outputs.CommitsSinceVersionSource }}
-      RepositoryName: ${{ steps.repository.outputs.Name }}
+      RepositoryName: project-server
       BranchName: ${{ steps.gitversion.outputs.branchName }}
 
     steps:
