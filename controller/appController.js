@@ -23,6 +23,81 @@ class AppController {
         this.refreshIntervalMs = 5000;
         this.refreshTimer = null;
         this.refreshInFlight = false;
+
+        this.calendarInteractionDepth = 0; // 0 = no modal open, 1 = day detail modal open, 2 = project/task detail modal open
+        this.calendarRenderPending = false;
+        this.lastCalendarRenderHash = '';
+    }
+
+    isAnyModalOpen() {
+        return !!document.querySelector('.modal-overlay.open');
+    }
+
+    isAnyCalendarModalOpen() {
+        return !!document.querySelector('#calendarDayDetailModal.open, #calendarProjectDetailModal.open, #calendarTaskDetailModal.open');
+    }
+
+    beginCalendarInteraction() {
+        this.calendarInteractionDepth++;
+    }
+
+    endCalendarInteraction() {
+        this.calendarInteractionDepth = Math.max(0, this.calendarInteractionDepth - 1);
+
+        // If render deferred during interaction, flush now.
+        if (this.calendarInteractionDepth === 0 && this.calendarRenderPending) {
+            this.calendarRenderPending = false;
+            this.requestCalendarRender(this.model.getState(), true);
+        }
+    }
+
+    buildCalendarRenderHash(state = this.model.getState()) {
+        const visibleProjects = this.getVisibleProjects(state)
+            .filter(project => project.dueDate)
+            .map(project => ({
+                id: String(project.id),
+                title: project.title || '',
+                dueDate: String(project.dueDate || '')
+            }))
+            .sort((a, b) => a.id.localeCompare(b.id));
+
+        const visibleTasks = this.getVisibleTasks(state)
+            .filter(task => task.dueDate)
+            .map(task => ({
+                id: String(task.id),
+                title: task.title || '',
+                dueDate: String(task.dueDate || ''),
+                priority: task.priority || 'medium',
+                status: task.status || 'pending'
+            }))
+            .sort((a, b) => a.id.localeCompare(b.id));
+        
+        return JSON.stringify({
+            monthOffset: this.calendarController.calendarMonthOffset,
+            sort: this.calendarController.calendarSort,
+            search: this.calendarController.calendarSearch || '',
+            projects: visibleProjects,
+            tasks: visibleTasks
+        });
+    }
+
+    requestCalendarRender(state = this.model.getState(), force = false) {
+        // Keep Calendar rendering scoped to calendar view
+        if (this.view.activeView !== 'calendar') return;
+
+        // prevent replacing click targets while user is interacing
+        if (this.calendarInteractionDepth > 0 || this.isAnyCalendarModalOpen()) {
+            this.calendarRenderPending = true;
+            return;
+        }
+
+        const nextHash = this.buildCalendarRenderHash(state);
+        if (!force && nextHash === this.lastCalendarRenderHash) {
+            return;
+        }
+
+        this.lastCalendarRenderHash = nextHash;
+        this.calendarController.renderCalendar(state);
     }
 
     async init() {
@@ -85,6 +160,11 @@ class AppController {
 
     async refreshDataSilently() {
         if (this.refreshInFlight) return;
+
+        // Do not refetch while user is interacting with the calendar modals
+        if (this.calendarInteractionDepth > 0 || this.isAnyCalendarModalOpen()) {
+            return;
+        }
 
         this.refreshInFlight = true;
         try {
@@ -159,13 +239,17 @@ class AppController {
 
         this.view.renderUserSwitcher(users, currentUser?.id);
         this.view.renderActiveUser(currentUser);
+
         if (this.view.manageRolesBtn) {
             this.view.manageRolesBtn.classList.toggle('hidden', currentUser?.role !== 'Admin');
         }
+
         this.renderDashboard(state);
         this.renderProjectsList(state);
         this.renderTasksList(state);
-        this.calendarController.renderCalendar(state);
+
+        // Only render calendar when safe and when calendar data actually changed.
+        this.requestCalendarRender(state);
 
         if (this.activeProjectId) {
             const project = state.projects.find(item => item.id === this.activeProjectId);
@@ -200,7 +284,13 @@ class AppController {
         if (targetView !== 'project-detail') {
             this.activeProjectId = null;
         }
+
         this.view.showView(targetView);
+
+        // Force one render when entering calendar so it always shows the latest data, even if no state change occurred.
+        if (targetView === 'calendar') {
+            this.requestCalendarRender(this.model.getState(), true);
+        }
     }
 
     hasGlobalProjectAccess(state = this.model.getState()) {
@@ -430,48 +520,6 @@ class AppController {
 
         this.view.openTaskDetails(taskForModal, state.users);
     }
-    
-    // getCalendarMonthDate(){
-    //     const today = new Date();
-    //     return new Date(today.getMonth() + this.calendarMonthOffset, today.getFullYear());
-    // }
-
-    // renderCalendar(state = this.model.getState()) {
-    //     const visibleProjects = this.getVisibleProjects(state);
-    //     const visibleTasks = this.getVisibleTasks(state);
-
-    //     const items =[
-    //         ...visibleProjects
-    //             .filter(project => project.dueDate)
-    //             .map(project => ({
-    //                 type: 'project',
-    //                 id: project.id,
-    //                 title: project.title,
-    //                 dueDate: project.dueDate,
-    //                 priority: 'medium', // Projects don't have priority, but we can assign a default for sorting
-    //                 data: project
-    //             })),
-    //         ...visibleTasks
-    //             .filter(task => task.dueDate)
-    //             .map(task => ({
-    //                 type: 'task',
-    //                 id: task.id,
-    //                 title: task.title,
-    //                 dueDate: task.dueDate,
-    //                 priority: task.priority || 'medium',
-    //                 data: task
-    //             }))
-    //     ];
-
-    //     this.view.renderMonthlyCalendar(items, this.getCalendarMonthDate(), {
-    //         sortBy: this.calendarSort,
-    //         onProjectClick: (project) => this.view.openCalendarProjectDetail(project, state.users),
-    //         onTaskClick: (task) => this.view.openCalendarTaskDetail(task, state.users, state.projects),
-    //         onDayClick: (dayLabel, dayItems) => this.view.openCalendarDayDetail(dayLabel, dayItems, {
-    //             onProjectClick: (project) => this.view.openCalendarProjectDetail(project, state.users),
-    //             onTaskClick: (task) => this.view.openCalendarTaskDetail(task, state.users, state.projects)
-    //         })
-    //     })
 }
 
 class ProjectManagerApp {

@@ -160,7 +160,6 @@ class AppViewModular {
             closeCalendarDayDetailBtn: document.getElementById('closeCalendarDayDetailBtn'),
             calendarDayTitle: document.getElementById('calendarDayTitle'),
             calendarDayLabel: document.getElementById('calendarDayLabel'),
-            calendarDayItemsCounter: document.getElementById('calendarDayItemsCounter'),
         };
     }
 
@@ -189,11 +188,11 @@ class AppViewModular {
 
     renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) { return this.taskView.renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal, scopeVal, statusVal, priorityVal, activeUserId); }
 
-    renderMonthlyCalendar(items, monthDate, handlers) {return this.calendarView.renderMonthlyCalendar(items, monthDate, handlers); }
+    renderMonthlyCalendar(calendarGrid, handlers) {return this.calendarView.renderMonthlyCalendar(calendarGrid, handlers); }
 
     openCalendarProjectDetailModal(project, users) { return this.modalView.openCalendarProjectDetailModal(project, users); }
     openCalendarTaskDetailModal(task, users, projects) { return this.modalView.openCalendarTaskDetailModal(task, users, projects); }
-    openCalendarDayDetailModal(date, items, handlers) { return this.modalView.openCalendarDayDetailModal(date, items, handlers); }
+    openCalendarDayDetailModal(dayLabel, items, handlers) { return this.modalView.openCalendarDayDetailModal(dayLabel, items, handlers); }
 
     populateProjectSelector(projects, activeProjectId = null) { return this.modalView.populateProjectSelector(projects, activeProjectId); }
     populateAssigneeSelector(users) { return this.modalView.populateAssigneeSelector(users); }

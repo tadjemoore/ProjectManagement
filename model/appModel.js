@@ -3,6 +3,7 @@ class AppModel {
         this.stateModel = new StateModel(options);
         this.projectModel = new ProjectModel(this);
         this.taskModel = new TaskModel(this);
+        this.calendarModel = new CalendarModel(this);
 
         this.apiUrl = this.stateModel.apiUrl;
         this.state = this.stateModel.state;
@@ -25,12 +26,33 @@ class AppModel {
         return this.stateModel.setState(patch, notify);
     }
 
-    syncCurrentUser(prefferredUserId = null, allowDemoFallback = false) {
-        return this.stateModel.syncCurrentUser(prefferredUserId, allowDemoFallback);
+    syncCurrentUser(preferredUserId = null, allowDemoFallback = false) {
+        return this.stateModel.syncCurrentUser(preferredUserId, allowDemoFallback);
     }
 
     changeUser(userId) {
         return this.stateModel.changeUser(userId);
+    }
+
+    getCalendarMonthDate(monthOffset = 0) {
+        return this.calendarModel.getCalendarMonthDate(monthOffset);
+    }
+
+    buildCalendarItems(visibleProjects, visibleTasks, searchQuery= '') {
+        const items = this.calendarModel.buildCalendarItems(visibleProjects, visibleTasks);
+        return this.calendarModel.filterCalendarItems(items, searchQuery);
+    }
+
+    sortCalendarItems(items, sortBy = 'date') {
+        return this.calendarModel.sortCalendarItems(items, sortBy);
+    }
+
+    getCalendarDayItems(items, dayLabel, sortBy = 'date') {
+        return this.calendarModel.getCalendarDayItems(items, dayLabel, sortBy);
+    }
+
+    buildCalendarGrid(monthDate, items, sortBy = 'date') {
+        return this.calendarModel.buildCalendarGrid(monthDate, items, sortBy);
     }
 
     async loadData() {

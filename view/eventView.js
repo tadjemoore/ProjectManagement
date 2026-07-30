@@ -342,6 +342,7 @@ class EventView {
         this.view.calendarPreviousMonthBtn?.addEventListener('click', () => handlers.onPreviousMonth());
         this.view.calendarNextMonthBtn?.addEventListener('click', () => handlers.onNextMonth());
         this.view.calendarSortSelect?.addEventListener('change', (e) => handlers.onSortChange(e.target.value));
+        this.view.calendarSearchInput?.addEventListener('input', (e) => handlers.onSearchChange(e.target.value || ''));
         // this.view.navCalendar?.addEventListener('click', (e) => handleNav(e, 'calendar'));
     }
 }

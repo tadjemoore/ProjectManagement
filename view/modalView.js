@@ -68,20 +68,6 @@ class ModalView {
         
         this.setTaskDetailsEditMode(false);
         this.view.openModal(this.view.taskDetailsModal);
-        // this.setTaskDetailsEditMode(false);
-        // const canEdit = !!task.canEdit;
-        // this.view.taskDetailsEditBtn.classList.toggle('hidden', !canEdit);
-        
-        // this.view.openModal(this.view.taskDetailsModal);
-
-        // this.view.taskDetailsTitle.textContent = task.title;
-        // this.view.taskDetailsDescription.textContent = task.description || 'No description';
-        // this.view.taskDetailsProject.textContent = task.projectTitle || 'External Task';
-        // this.view.taskDetailsAssignee.textContent = assignee ? assignee.name : 'Unassigned';
-        // this.view.taskDetailsPriority.textContent = task.priority;
-        // this.view.taskDetailsDueDate.textContent = task.dueDate || 'No date';
-        // this.view.taskDetailsStatus.textContent = task.status || 'No status';
-        // this.view.openModal(this.view.taskDetailsModal);
     }
 
     setTaskDetailsEditMode(isEditing) {
@@ -157,21 +143,30 @@ class ModalView {
     }
 
     openCalendarProjectDetailModal(project, users) {
-        this.view.calendarProjectTitle.value = project.title || '';
-        this.view.calendarProjectDescription.value = project.description || '';
-        this.view.calendarProjectDueDate.value = project.dueDate || '';
+        // Guard: prevent hard crash
+        if (!project || typeof project !== 'object') {
+            console.error('Calendar project data is invalid:', project);
+            this.view.showToast('Error: Unable to open project details', 'error');
+            return;
+        }
 
+        const safeUsers = Array.isArray(users) ? users : [];
+        const safeMemberIds = Array.isArray(project.memberIds) ? project.memberIds : [];
+        
+        this.view.calendarProjectDescription.value = project.description || '';
+        this.view.calendarProjectTitle.value = project.title || '';
+        this.view.calendarProjectDueDate.value = project.dueDate || '';
+        
         const ownerName = project.owner?.name || 'Unknown';
         const ownerRole = project.owner?.role || 'Unknown';
         const ownerInitials = this.view.getInitials(project.owner?.name);
         const ownerColor = this.view.getAvatarColor(project.owner?.name || 'Owner');
-        
+    
         this.view.calendarProjectOwnerDisplay.innerHTML = `
             <div class="avatar avatar-sm" style="background: ${ownerColor}">${ownerInitials}</div>
             <span>${ownerName} (${ownerRole})</span>`;
 
-        const memberIds = Array.isArray(project.memberIds) ? project.memberIds : [];
-        this.view.calendarProjectMembersGrid.innerHTML = users.filter(user => project.memberIds.includes(user.id)).map(user => `
+        this.view.calendarProjectMembersGrid.innerHTML = safeUsers.filter(user => safeMemberIds.includes(user.id)).map(user => `
             <label class="checkbox-card">
                 <input type="checkbox" value="${user.id}" disabled checked>
                 <span>${user.name} (${user.role})</span>
@@ -182,8 +177,17 @@ class ModalView {
     }
 
     openCalendarTaskDetailModal(task, users, projects) {
-        const project = projects.find(item => item.id === task.projectId);
-        const assignee = users.find(item => item.id === task.assigneeId);
+        // Guard: prevent hard crash
+        if (!task || typeof task !== 'object') {
+            console.error('Calendar task data is invalid:', task);
+            this.view.showToast('Error: Unable to open task details', 'error');
+            return;
+        }
+        const safeUsers = Array.isArray(users) ? users : [];
+        const safeProjects = Array.isArray(projects) ? projects : [];
+
+        const project = safeProjects.find(item => String(item.id) === String(task.projectId));
+        const assignee = safeUsers.find(item => String(item.id) === String(task.assigneeId));
 
         this.view.calendarTaskTitle.value = task.title || '';
         this.view.calendarTaskDescription.value = task.description || '';
@@ -222,23 +226,39 @@ class ModalView {
             row.addEventListener('click', () => {
                 const itemId = row.getAttribute('data-item-id');
                 const itemType = row.getAttribute('data-item-type');
-                const item = items.find(entry => entry.id === itemId && entry.type === itemType);
+                // String compare to avoid id type mismatch (string vs number)
+                const item = items.find(entry => String(entry.id) === String(itemId) && entry.type === itemType);
 
-                if (!item) return;
+                const onInteractionStart = typeof handlers?.onInteractionStart === 'function' ? handlers.onInteractionStart : () => {};
+                const onInteractionEnd = typeof handlers?.onInteractionEnd === 'function' ? handlers.onInteractionEnd : () => {};
 
-                const calendarData = item.data || item; // Use item.data if available, otherwise use item directly
-
-                // Close the day list modal first, then open detail modal via handlers
-                this.view.closeModal(this.view.calendarDayDetailModal);
-
-                if (item.type === 'project') {
-                    handlers.onProjectClick(item);
-                } else {
-                    handlers.onTaskClick(item);
+                try {
+                    if (!item) {
+                        console.warn('Calendar day item not found', {itemId, itemType});
+                        this.view.showToast?.('Unable to open item details.', 'error');
+                        return;
+                    }
+                    
+                    // had detail handlers to origianl domain object from controller
+                    const calendarData = item.data || item; // Use item.data if available, otherwise use item directly
+                    
+                    onInteractionStart(); // Notify app controller that user is interacting with the calendar
+                    // Close the day list modal first, then open detail modal via handlers
+                    this.view.closeModal(this.view.calendarDayDetailModal);
+                    
+                    if (item.type === 'project') {
+                        handlers.onProjectClick(calendarData);
+                    } else {
+                        handlers.onTaskClick(calendarData);
+                    }
+                } catch (error) {
+                    console.error('Calendar day item click failed', {error, itemId, itemType, dayLabel});
+                    this.view.showToast?.('Failed to open item details.', 'error');
+                } finally {
+                    onInteractionEnd(); // Notify app controller that user has finished interacting with the calendar
                 }
-                
-                this.view.openModal(this.view.calendarDayDetailModal);
             });
         });
+        this.view.openModal(this.view.calendarDayDetailModal);
     }
-}
+}   
