@@ -19,6 +19,7 @@ class EventView {
         this.view.navProjects.addEventListener('click', (e) => handleNav(e, 'projects'));
         this.view.navTasks.addEventListener('click', (e) => handleNav(e, 'tasks'));
         this.view.backToProjectsBtn.addEventListener('click', (e) => handleNav(e, 'projects'));
+        this.view.navCalendar?.addEventListener('click', (e) => handleNav(e, 'calendar'));
     }
 
     bindProjectDetailClick(handler) {
@@ -335,5 +336,12 @@ class EventView {
                 this.view.showToast(error?.message || 'Failed to update project', 'error');
             }
         });
+    }
+
+    bindCalendarControls(handlers) {
+        this.view.calendarPreviousMonthBtn?.addEventListener('click', () => handlers.onPreviousMonth());
+        this.view.calendarNextMonthBtn?.addEventListener('click', () => handlers.onNextMonth());
+        this.view.calendarSortSelect?.addEventListener('change', (e) => handlers.onSortChange(e.target.value));
+        // this.view.navCalendar?.addEventListener('click', (e) => handleNav(e, 'calendar'));
     }
 }

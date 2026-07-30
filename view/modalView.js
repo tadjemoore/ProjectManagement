@@ -117,9 +117,9 @@ class ModalView {
         this.view.editProjectDueDate.value = project.dueDate || '';
 
         if(!this.view.editModalProjectOwnerDisplay || !this.view.editProjectMembersCheckboxGrid) {
-            throw new error ('Edit Project modal is missing required owner or members elements.');
+            throw new Error('Edit Project modal is missing required owner or members elements.');
         }
-        
+
         // Render read only owner badge so editor knows who owns the project
         const ownerInitials = this.view.getInitials(project.owner?.name);
         const ownerColor = this.view.getAvatarColor(project.owner?.name || 'Owner');
@@ -154,5 +154,91 @@ class ModalView {
             dueDate: this.view.editProjectDueDate.value,
             memberIds
         };
+    }
+
+    openCalendarProjectDetailModal(project, users) {
+        this.view.calendarProjectTitle.value = project.title || '';
+        this.view.calendarProjectDescription.value = project.description || '';
+        this.view.calendarProjectDueDate.value = project.dueDate || '';
+
+        const ownerName = project.owner?.name || 'Unknown';
+        const ownerRole = project.owner?.role || 'Unknown';
+        const ownerInitials = this.view.getInitials(project.owner?.name);
+        const ownerColor = this.view.getAvatarColor(project.owner?.name || 'Owner');
+        
+        this.view.calendarProjectOwnerDisplay.innerHTML = `
+            <div class="avatar avatar-sm" style="background: ${ownerColor}">${ownerInitials}</div>
+            <span>${ownerName} (${ownerRole})</span>`;
+
+        const memberIds = Array.isArray(project.memberIds) ? project.memberIds : [];
+        this.view.calendarProjectMembersGrid.innerHTML = users.filter(user => project.memberIds.includes(user.id)).map(user => `
+            <label class="checkbox-card">
+                <input type="checkbox" value="${user.id}" disabled checked>
+                <span>${user.name} (${user.role})</span>
+            </label>
+        `).join('');
+
+        this.view.openModal(this.view.calendarProjectDetailModal);
+    }
+
+    openCalendarTaskDetailModal(task, users, projects) {
+        const project = projects.find(item => item.id === task.projectId);
+        const assignee = users.find(item => item.id === task.assigneeId);
+
+        this.view.calendarTaskTitle.value = task.title || '';
+        this.view.calendarTaskDescription.value = task.description || '';
+        this.view.calendarTaskProject.value = project ? project.title : 'Unknown Project';
+        this.view.calendarTaskAssignee.value = assignee ? `${assignee.name} (${assignee.role})` : 'Unassigned';
+        this.view.calendarTaskStatus.value = task.status || '';
+        this.view.calendarTaskPriority.value = task.priority || '';
+        this.view.calendarTaskDueDate.value = task.dueDate || '';
+
+        this.view.openModal(this.view.calendarTaskDetailModal);
+    }
+
+    openCalendarDayDetailModal(dayLabel, items, handlers) {
+        this.view.calendarDayTitle.textContent = 'Due Items';
+        this.view.calendarDayLabel.textContent = dayLabel;
+
+        if (!items.length) {
+            this.view.calendarDayItemsContainer.innerHTML = `
+                <div class="empty-state-card" style="padding: 20px">
+                    <p>No tasks or projects due on this day.</p>
+                </div>
+            `;
+        } else {
+            this.view.calendarDayItemsContainer.innerHTML = items.map(item => `
+                <div class="calendar-day-item-row" data-item-id="${item.id}" data-item-type="${item.type}">
+                    <div>
+                        <strong>${item.title}</strong>
+                        <p>${item.type === 'project' ? 'Project' : 'Task'} due ${item.dueDate}</p>
+                    </div>
+                    <span class="badge badge-${item.type === 'project' ? 'medium' : item.priority}">${item.type}</span>
+                </div>
+            `).join('');
+        }
+
+        this.view.calendarDayItemsContainer.querySelectorAll('.calendar-day-item-row').forEach(row => {
+            row.addEventListener('click', () => {
+                const itemId = row.getAttribute('data-item-id');
+                const itemType = row.getAttribute('data-item-type');
+                const item = items.find(entry => entry.id === itemId && entry.type === itemType);
+
+                if (!item) return;
+
+                const calendarData = item.data || item; // Use item.data if available, otherwise use item directly
+
+                // Close the day list modal first, then open detail modal via handlers
+                this.view.closeModal(this.view.calendarDayDetailModal);
+
+                if (item.type === 'project') {
+                    handlers.onProjectClick(item);
+                } else {
+                    handlers.onTaskClick(item);
+                }
+                
+                this.view.openModal(this.view.calendarDayDetailModal);
+            });
+        });
     }
 }

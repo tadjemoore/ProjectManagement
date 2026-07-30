@@ -104,7 +104,7 @@
                     <div class="members-check-box-grid" id="editProjectMembersCheckboxGrid"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" id="cancelEditProjectBtn">Cancel</button>
                 <button type="submit" class="btn btn-primary">Save Changes</button>
@@ -276,6 +276,124 @@
                 <button type="submit" class="btn btn-primary">Save Role</button>
             </div>
         </form>
+    </div>
+</div>
+
+<div class="modal-overlay" id="calendarProjectDetailModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Project Details</h3>
+            <button class="modal-close-btn" id="closeCalendarProjectDetailModalBtn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Project Title</label>
+                <input type="text" id="calendarProjectTitle" class="form-input" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="calendarProjectDescription" class="form-input form-textarea" readonly></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-6">
+                    <label class="form-label">Due Date</label>
+                    <input type="text" id="calendarProjectDueDate" class="form-input" readonly>
+                </div>
+
+                <div class="form-group col-6">
+                    <label class="form-label">Owner</label>
+                    <div class="read-only-owner-badge" id="calendarProjectOwnerDisplay">
+                        <div class="avatar avatar-sm"></div>
+                        <span></span>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Project Members</label>
+                    <div class="members-checkbox-grid" id="calendarProjectMembersGrid"></div>
+                </div>
+            </div>
+            
+            <!-- add in project tasks list, similar to how "Create Project" modal has it, but read-only -->
+            <!-- <div class="form-group">
+                <label class="form-label">Project Tasks</label>
+                <div class="project-tasks-list" id="calendarProjectTasksList"></div>
+            </div> -->
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="closeCalendarProjectDetailBtn">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="calendarTaskDetailModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Task Details</h3>
+            <button class="modal-close-btn" id="closeCalendarTaskDetailModalBtn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <div class="form-group">
+                <label class="form-label">Task Title</label>
+                <input type="text" id="calendarTaskTitle" class="form-input" readonly>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Description</label>
+                <textarea id="calendarTaskDescription" class="form-input form-textarea" readonly></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-4">
+                    <label class="form-label">Project</label>
+                    <input type="text" id="calendarTaskProject" class="form-input" readonly>
+                </div>
+                <div class="form-group col-4">
+                    <label class="form-label">Assignee</label>
+                    <input type="text" id="calendarTaskAssignee" class="form-input" readonly>
+                </div>
+                <div class="form-group col-4">
+                    <label class="form-label">Status</label>
+                    <input type="text" id="calendarTaskStatus" class="form-input" readonly>
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-4">
+                    <label class="form-label">Priority</label>
+                    <input type="text" id="calendarTaskPriority" class="form-input" readonly>
+                </div>
+                <div class="form-group col-4">
+                    <label class="form-label">Due Date</label>
+                    <input type="text" id="calendarTaskDueDate" class="form-input" readonly>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="closeCalendarTaskDetailBtn">Close</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="calendarDayDetailModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="calendarDayTitle">Items Due</h3>
+            <button class="modal-close-btn" id="closeCalendarDayDetailModalBtn">&times;</button>
+        </div>
+
+        <div class="modal-body">
+            <p class="modal-instruction-text" id="calendarDayLabel">Tasks and Projects Due</p>
+            <div id="calendarDayItemsContainer"></div>
+        </div>
+
+        <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" id="closeCalendarDayDetailBtn">Close</button>
+        </div>
     </div>
 </div>
 

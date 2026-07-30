@@ -70,6 +70,7 @@ class CommonView {
             dashboard: 'Dashboard',
             projects: 'Projects Platform',
             tasks: 'Global Tasks Board',
+            calendar: 'Calendar Overview',
             'project-detail': 'Project Details'
         };
         this.view.pageTitle.textContent = titleMap[viewName] || 'Management Workspace';

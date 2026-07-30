@@ -6,15 +6,20 @@ class AppController {
 
         this.projectSearch = '';
         this.projectStatus = 'all';
+        this.activeProjectId = null;
+
         this.taskSearch = '';
         this.taskScope = 'all';
         this.taskStatus = 'all';
         this.taskPriority = 'all';
-        this.activeProjectId = null;
+                
         this.adminRoles = [];
+
         this.navigationController = new NavigationController(model, view, this);
         this.projectController = new ProjectController(model, view, this);
         this.taskController = new TaskController(model, view, this);
+        this.calendarController = new CalendarController(model, view, this);
+        
         this.refreshIntervalMs = 5000;
         this.refreshTimer = null;
         this.refreshInFlight = false;
@@ -25,7 +30,10 @@ class AppController {
         this.navigationController.init();
         this.projectController.init();
         this.taskController.init();
+        this.calendarController.init();
+
         this.view.bindRoleAssignmentSave((userId, role) => this.handleRoleAssignment(userId, role));
+
         await this.model.loadData();
 
         const savedUserId = localStorage.getItem('currentUserId');
@@ -157,6 +165,7 @@ class AppController {
         this.renderDashboard(state);
         this.renderProjectsList(state);
         this.renderTasksList(state);
+        this.calendarController.renderCalendar(state);
 
         if (this.activeProjectId) {
             const project = state.projects.find(item => item.id === this.activeProjectId);
@@ -421,6 +430,48 @@ class AppController {
 
         this.view.openTaskDetails(taskForModal, state.users);
     }
+    
+    // getCalendarMonthDate(){
+    //     const today = new Date();
+    //     return new Date(today.getMonth() + this.calendarMonthOffset, today.getFullYear());
+    // }
+
+    // renderCalendar(state = this.model.getState()) {
+    //     const visibleProjects = this.getVisibleProjects(state);
+    //     const visibleTasks = this.getVisibleTasks(state);
+
+    //     const items =[
+    //         ...visibleProjects
+    //             .filter(project => project.dueDate)
+    //             .map(project => ({
+    //                 type: 'project',
+    //                 id: project.id,
+    //                 title: project.title,
+    //                 dueDate: project.dueDate,
+    //                 priority: 'medium', // Projects don't have priority, but we can assign a default for sorting
+    //                 data: project
+    //             })),
+    //         ...visibleTasks
+    //             .filter(task => task.dueDate)
+    //             .map(task => ({
+    //                 type: 'task',
+    //                 id: task.id,
+    //                 title: task.title,
+    //                 dueDate: task.dueDate,
+    //                 priority: task.priority || 'medium',
+    //                 data: task
+    //             }))
+    //     ];
+
+    //     this.view.renderMonthlyCalendar(items, this.getCalendarMonthDate(), {
+    //         sortBy: this.calendarSort,
+    //         onProjectClick: (project) => this.view.openCalendarProjectDetail(project, state.users),
+    //         onTaskClick: (task) => this.view.openCalendarTaskDetail(task, state.users, state.projects),
+    //         onDayClick: (dayLabel, dayItems) => this.view.openCalendarDayDetail(dayLabel, dayItems, {
+    //             onProjectClick: (project) => this.view.openCalendarProjectDetail(project, state.users),
+    //             onTaskClick: (task) => this.view.openCalendarTaskDetail(task, state.users, state.projects)
+    //         })
+    //     })
 }
 
 class ProjectManagerApp {

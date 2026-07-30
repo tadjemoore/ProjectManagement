@@ -75,6 +75,21 @@ class NavigationController {
         //     this.view.closeManageRolesModalBtn.addEventListener('click', closeRolesModal);
         //     this.view.cancelManageRolesBtn.addEventListener('click', closeRolesModal);
         // }
+
+        // Calendar project detail modal close contorls
+        const closeCalendarProjectDetailModal = () => this.view.closeModal(this.view.calendarProjectDetailModal);
+        this.view.closeCalendarProjectDetailModalBtn?.addEventListener('click', closeCalendarProjectDetailModal);
+        this.view.closeCalendarProjectDetailBtn?.addEventListener('click', closeCalendarProjectDetailModal);
+
+        // Calendar task detail modal close controls
+        const closeCalendarTaskDetailModal = () => this.view.closeModal(this.view.calendarTaskDetailModal);
+        this.view.closeCalendarTaskDetailModalBtn?.addEventListener('click', closeCalendarTaskDetailModal);
+        this.view.closeCalendarTaskDetailBtn?.addEventListener('click', closeCalendarTaskDetailModal);
+
+        // Calendar day detail modal close controls
+        const closeCalendarDayDetailModal = () => this.view.closeModal(this.view.calendarDayDetailModal);
+        this.view.closeCalendarDayDetailModalBtn?.addEventListener('click', closeCalendarDayDetailModal);
+        this.view.closeCalendarDayDetailBtn?.addEventListener('click', closeCalendarDayDetailModal);
     }
 
     handleNavigation(targetView) {

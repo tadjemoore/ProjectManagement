@@ -24,6 +24,11 @@
                 <i class="fa-solid fa-list-check nav-icon"></i>
                 <span>All Tasks</span>
             </a>
+
+            <a href="#" class="nav-item" data-target="calendar" id="nav-calendar">
+                <i class="fa-solid fa-calendar-days nav-icon"></i>
+                <span>Calendar</span>
+            </a>
         </nav>
 
         <div class="sidebar-footer">
@@ -187,6 +192,47 @@
                 </div>
             </section>
 
+            <section id="view-calendar" class="app-view">
+                <div class="filters-bar">
+                    <div class="search-input-wrapper">
+                        <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                        <input type="text" id="calendarSearchInput" placeholder="Search calendar events..." class="form-input">
+                    </div>
+
+                    <div class="filters-group">
+                        <button type="button" class="btn btn-secondary btn-sm" id="calendarPreviousMonthBtn">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </button>
+
+                        <div class="calendar-month-label" id="calendarMonthLabel">Month YYYY</div>
+
+                        <button type="button" class="btn btn-secondary btn-sm" id="calendarNextMonthBtn">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </button>
+
+                        <select id="calendarSortSelect" class="form-select">
+                            <option value="type">Sort by Type</option>
+                            <option value="due_date">Sort by Due Date</option>
+                            <option value="priority">Sort by Priority</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="calendar-panel">
+                    <div class="calendar-weekdays">
+                        <div class="calendar-weekday">Sun</div>
+                        <div class="calendar-weekday">Mon</div>
+                        <div class="calendar-weekday">Tue</div>
+                        <div class="calendar-weekday">Wed</div>
+                        <div class="calendar-weekday">Thu</div>
+                        <div class="calendar-weekday">Fri</div>
+                        <div class="calendar-weekday">Sat</div>
+                    </div>
+
+                    <div class="calendar-grid" id="monthlyCalendarGrid"></div>
+                </div>
+            </section>
+            
             <section id="view-project-detail" class="app-view">
                 <div class="project-detail-header-panel">
                     <div class="detail-meta-top">

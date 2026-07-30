@@ -6,6 +6,7 @@ class AppViewModular {
         this.commonView = new CommonView(this);
         this.dashboardView = new DashboardView(this);
         this.projectView = new ProjectView(this);
+        this.calendarView = new CalendarView(this);
         this.taskView = new TaskView(this);
         this.modalView = new ModalView(this);
         this.eventView = new EventView(this);
@@ -124,6 +125,42 @@ class AppViewModular {
             editProjectDueDate: document.getElementById('editProjectDueDate'),
             editModalProjectOwnerDisplay: document.getElementById('editModalProjectOwnerDisplay'),
             editProjectMembersCheckboxGrid: document.getElementById('editProjectMembersCheckboxGrid'),
+            
+            navCalendar: document.getElementById('nav-calendar'),
+            calendarSearchInput: document.getElementById('calendarSearchInput'),
+            calendarPreviousMonthBtn: document.getElementById('calendarPreviousMonthBtn'),
+            calendarNextMonthBtn: document.getElementById('calendarNextMonthBtn'),
+            calendarMonthLabel: document.getElementById('calendarMonthLabel'),
+            calendarSortSelect: document.getElementById('calendarSortSelect'),
+            monthlyCalendarGrid: document.getElementById('monthlyCalendarGrid'),
+            calendarDayItemsContainer: document.getElementById('calendarDayItemsContainer'),
+
+            calendarProjectDetailModal: document.getElementById('calendarProjectDetailModal'),
+            closeCalendarProjectDetailBtn: document.getElementById('closeCalendarProjectDetailBtn'),
+            closeCalendarProjectDetailModalBtn: document.getElementById('closeCalendarProjectDetailModalBtn'),
+            calendarProjectTitle: document.getElementById('calendarProjectTitle'),
+            calendarProjectDescription: document.getElementById('calendarProjectDescription'),
+            calendarProjectDueDate: document.getElementById('calendarProjectDueDate'),
+            calendarProjectOwnerDisplay: document.getElementById('calendarProjectOwnerDisplay'),
+            calendarProjectMembersGrid: document.getElementById('calendarProjectMembersGrid'),
+
+            calendarTaskDetailModal: document.getElementById('calendarTaskDetailModal'),
+            closeCalendarTaskDetailBtn: document.getElementById('closeCalendarTaskDetailBtn'),
+            closeCalendarTaskDetailModalBtn: document.getElementById('closeCalendarTaskDetailModalBtn'),
+            calendarTaskTitle: document.getElementById('calendarTaskTitle'),
+            calendarTaskDescription: document.getElementById('calendarTaskDescription'),
+            calendarTaskProject: document.getElementById('calendarTaskProject'),
+            calendarTaskAssignee: document.getElementById('calendarTaskAssignee'),
+            calendarTaskStatus: document.getElementById('calendarTaskStatus'),
+            calendarTaskPriority: document.getElementById('calendarTaskPriority'),
+            calendarTaskDueDate: document.getElementById('calendarTaskDueDate'),
+
+            calendarDayDetailModal: document.getElementById('calendarDayDetailModal'),
+            closeCalendarDayDetailModalBtn: document.getElementById('closeCalendarDayDetailModalBtn'),
+            closeCalendarDayDetailBtn: document.getElementById('closeCalendarDayDetailBtn'),
+            calendarDayTitle: document.getElementById('calendarDayTitle'),
+            calendarDayLabel: document.getElementById('calendarDayLabel'),
+            calendarDayItemsCounter: document.getElementById('calendarDayItemsCounter'),
         };
     }
 
@@ -152,6 +189,12 @@ class AppViewModular {
 
     renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) { return this.taskView.renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal, scopeVal, statusVal, priorityVal, activeUserId); }
 
+    renderMonthlyCalendar(items, monthDate, handlers) {return this.calendarView.renderMonthlyCalendar(items, monthDate, handlers); }
+
+    openCalendarProjectDetailModal(project, users) { return this.modalView.openCalendarProjectDetailModal(project, users); }
+    openCalendarTaskDetailModal(task, users, projects) { return this.modalView.openCalendarTaskDetailModal(task, users, projects); }
+    openCalendarDayDetailModal(date, items, handlers) { return this.modalView.openCalendarDayDetailModal(date, items, handlers); }
+
     populateProjectSelector(projects, activeProjectId = null) { return this.modalView.populateProjectSelector(projects, activeProjectId); }
     populateAssigneeSelector(users) { return this.modalView.populateAssigneeSelector(users); }
     setupManageMembersModal(project, users) { return this.modalView.setupManageMembersModal(project, users); }
@@ -169,4 +212,5 @@ class AppViewModular {
     bindFilters(onProjectFilter, onTaskFilter) { return this.eventView.bindFilters(onProjectFilter, onTaskFilter); }
     bindTaskDetailsEvents(onSave) {return this.eventView.bindTaskDetailsEvents(onSave); }
     bindEditProject(handler) { return this.eventView.bindEditProject(handler); }
+    bindCalendarControls(handlers) { return this.eventView.bindCalendarControls(handlers); }
 }
