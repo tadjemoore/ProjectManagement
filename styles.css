@@ -1653,6 +1653,11 @@ body {
     border: 1px solid transparent;
 }
 
+.calendar-chip:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
 .calendar-chip-project {
     background: rgba(59, 130, 246, 0.14);
     border-color: rgba(59, 130, 246, 0.3);
