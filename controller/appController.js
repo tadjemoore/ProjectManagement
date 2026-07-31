@@ -20,10 +20,6 @@ class AppController {
         this.taskController = new TaskController(model, view, this);
         this.calendarController = new CalendarController(model, view, this);
         
-        this.refreshIntervalMs = 5000;
-        this.refreshTimer = null;
-        this.refreshInFlight = false;
-
         this.calendarInteractionDepth = 0; // 0 = no modal open, 1 = day detail modal open, 2 = project/task detail modal open
         this.calendarRenderPending = false;
         this.lastCalendarRenderHash = '';
@@ -129,50 +125,6 @@ class AppController {
             localStorage.removeItem('currentUserId');
             window.location.href = 'login.html';
             return;
-        }
-
-        this.startAutoRefresh();
-
-        window.addEventListener('beforeunload', () => this.stopAutoRefresh());
-
-        document.addEventListener('visibilitychange', () => {
-            if (document.visibilityState == 'visible') {
-                this.startAutoRefresh();
-            }
-        });
-
-        window.addEventListener('focus', () => this.startAutoRefresh());
-    }
-
-    startAutoRefresh() {
-        this.stopAutoRefresh();
-        this.refreshTimer = setInterval(() => {
-            this.refreshDataSilently();
-        }, this.refreshIntervalMs);
-    }
-
-    stopAutoRefresh() {
-        if (this.refreshTimer) {
-            clearInterval(this.refreshTimer);
-            this.refreshTimer = null;
-        }
-    }
-
-    async refreshDataSilently() {
-        if (this.refreshInFlight) return;
-
-        // Do not refetch while user is interacting with the calendar modals
-        if (this.calendarInteractionDepth > 0 || this.isAnyCalendarModalOpen()) {
-            return;
-        }
-
-        this.refreshInFlight = true;
-        try {
-            await this.model.loadData();
-        } catch (error) {
-            console.error('Error refreshing data:', error);
-        } finally {
-            this.refreshInFlight = false;
         }
     }
 
