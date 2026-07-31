@@ -80,19 +80,37 @@ class NavigationController {
         const closeCalendarProjectDetailModal = () => {
             this.view.closeModal(this.view.calendarProjectDetailModal);
             this.appController.endCalendarInteraction();
-        };        
+        };
+        this.view.closeCalendarProjectDetailModalBtn.addEventListener('click', closeCalendarProjectDetailModal);
+        this.view.closeCalendarProjectDetailBtn.addEventListener('click', closeCalendarProjectDetailModal);
 
         // Calendar task detail modal close controls
         const closeCalendarTaskDetailModal = () => {
             this.view.closeModal(this.view.calendarTaskDetailModal);
             this.appController.endCalendarInteraction();
         };
+        this.view.closeCalendarTaskDetailModalBtn.addEventListener('click', closeCalendarTaskDetailModal);
+        this.view.closeCalendarTaskDetailBtn.addEventListener('click', closeCalendarTaskDetailModal);
 
         // Calendar day detail modal close controls
         const closeCalendarDayDetailModal = () => {
             this.view.closeModal(this.view.calendarDayDetailModal);
             this.appController.endCalendarInteraction();
         };
+        this.view.closeCalendarDayDetailModalBtn.addEventListener('click', closeCalendarDayDetailModal);
+        this.view.closeCalendarDayDetailBtn.addEventListener('click', closeCalendarDayDetailModal);
+
+        // Close calendar modals when clicking outside the modal content
+        [this.view.calendarProjectDetailModal, this.view.calendarTaskDetailModal, this.view.calendarDayDetailModal]
+            .filter(Boolean)
+            .forEach(modal => {
+                modal.addEventListener('click', (event) => {
+                    if (event.target === modal) {
+                        this.view.closeModal(modal);
+                        this.appController.endCalendarInteraction();
+                    }
+                });
+            });
     }
 
     handleNavigation(targetView) {

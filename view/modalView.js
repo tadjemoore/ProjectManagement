@@ -142,7 +142,7 @@ class ModalView {
         };
     }
 
-    openCalendarProjectDetailModal(project, users) {
+    openCalendarProjectDetailModal(project, users, tasks = []) {
         // Guard: prevent hard crash
         if (!project || typeof project !== 'object') {
             console.error('Calendar project data is invalid:', project);
@@ -151,6 +151,7 @@ class ModalView {
         }
 
         const safeUsers = Array.isArray(users) ? users : [];
+        const safeTasks = Array.isArray(tasks) ? tasks : [];
         const safeMemberIds = Array.isArray(project.memberIds) ? project.memberIds : [];
         
         this.view.calendarProjectDescription.value = project.description || '';
@@ -166,15 +167,52 @@ class ModalView {
             <div class="avatar avatar-sm" style="background: ${ownerColor}">${ownerInitials}</div>
             <span>${ownerName} (${ownerRole})</span>`;
 
-        this.view.calendarProjectMembersGrid.innerHTML = safeUsers.filter(user => safeMemberIds.includes(user.id)).map(user => `
-            <label class="checkbox-card">
-                <input type="checkbox" value="${user.id}" disabled checked>
-                <span>${user.name} (${user.role})</span>
-            </label>
-        `).join('');
+        // Members list
+        const members = safeUsers.filter(user => safeMemberIds.includes(user.id));
 
+        if (!members.length) {
+            this.view.calendarProjectMembersList.innerHTML = '<p>No members assigned to this project.</p>';
+        } else {
+            this.view.calendarProjectMembersList.innerHTML = members.map(member => {
+                const initials = this.view.getInitials(member.name);
+                const color = this.view.getAvatarColor(member.name);
+                return `
+                    <div class="member-card">
+                        <div class="avatar avatar-sm" style="background: ${color}">${initials}</div>
+                        <span>${member.name} (${member.role})</span>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Project tasks sorted by due date, empty due dates are last
+        const projectTasks = safeTasks
+            .filter(task => String(task.projectId) === String(project.id))
+            .sort ((a, b) => {
+                const aHasDue = !!a.dueDate;
+                const bHasDue = !!b.dueDate;
+                if (aHasDue && bHasDue) return new Date(a.dueDate) - new Date(b.dueDate);
+                if (aHasDue) return -1;
+                if (bHasDue) return 1;
+                return String(a.title || '').localeCompare(String(b.title || ''));
+            });
+
+        if (!projectTasks.length) {
+            this.view.calendarProjectTasksList.innerHTML = '<p>No tasks associated with this project.</p>';
+        } else {
+            this.view.calendarProjectTasksList.innerHTML = projectTasks.map(task => `
+                <div class="project-task-row">
+                    <div>
+                        <strong>${task.title || 'Untitled Task'}</strong>
+                        <p>${task.dueDate ? `Due ${task.dueDate}` : 'No due date'}</p>
+                    </div>
+                    <span class="badge badge-${task.priority || 'medium'}">${task.priority || 'medium'}</span>
+                </div>
+            `).join('');
+        }
         this.view.openModal(this.view.calendarProjectDetailModal);
     }
+
 
     openCalendarTaskDetailModal(task, users, projects) {
         // Guard: prevent hard crash

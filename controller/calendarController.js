@@ -26,7 +26,7 @@ class CalendarController {
         return {
             onInteractionStart: () => this.appController.beginCalendarInteraction(),
             onInteractionEnd: () => this.appController.endCalendarInteraction(),
-            onProjectClick: (project) => this.view.openCalendarProjectDetailModal(project, state.users),
+            onProjectClick: (project) => this.view.openCalendarProjectDetailModal(project, state.users, this.appController.getVisibleTasks(state)),
             onTaskClick: (task) => this.view.openCalendarTaskDetailModal(task, state.users, state.projects)
         };
     }

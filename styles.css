@@ -1197,6 +1197,53 @@ body {
     color: var(--text-muted);
 }
 
+.member-badge-list{
+    display: flex;
+    flex-wrap: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.members-list{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.member-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-tertiary);
+}
+
+.project-tasks-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.project-task-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background: var(--bg-tertiary);
+}
+
+.project-task-row p {
+    margin: 4px 0 0;
+    color: var(--text-muted);
+    font-size: 13px;
+}
 /* Project Tasks Checklist */
 .project-tasks-list {
     display: flex;

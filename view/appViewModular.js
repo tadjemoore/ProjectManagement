@@ -142,7 +142,9 @@ class AppViewModular {
             calendarProjectDescription: document.getElementById('calendarProjectDescription'),
             calendarProjectDueDate: document.getElementById('calendarProjectDueDate'),
             calendarProjectOwnerDisplay: document.getElementById('calendarProjectOwnerDisplay'),
-            calendarProjectMembersGrid: document.getElementById('calendarProjectMembersGrid'),
+            //calendarProjectMembersGrid: document.getElementById('calendarProjectMembersGrid'),
+            calendarProjectMembersList: document.getElementById('calendarProjectMembersList'),
+            calendarProjectTasksList: document.getElementById('calendarProjectTasksList'),
 
             calendarTaskDetailModal: document.getElementById('calendarTaskDetailModal'),
             closeCalendarTaskDetailBtn: document.getElementById('closeCalendarTaskDetailBtn'),
@@ -190,7 +192,7 @@ class AppViewModular {
 
     renderMonthlyCalendar(calendarGrid, handlers) {return this.calendarView.renderMonthlyCalendar(calendarGrid, handlers); }
 
-    openCalendarProjectDetailModal(project, users) { return this.modalView.openCalendarProjectDetailModal(project, users); }
+    openCalendarProjectDetailModal(project, users, tasks) { return this.modalView.openCalendarProjectDetailModal(project, users, tasks); }
     openCalendarTaskDetailModal(task, users, projects) { return this.modalView.openCalendarTaskDetailModal(task, users, projects); }
     openCalendarDayDetailModal(dayLabel, items, handlers) { return this.modalView.openCalendarDayDetailModal(dayLabel, items, handlers); }
 
