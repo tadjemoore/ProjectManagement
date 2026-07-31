@@ -7,8 +7,8 @@ import uuid
 # need an easy way to change DB path for NAS and to DEV easily by changin one variable instaed of changing code in multiple places
 CONFIG_FILE = "db_config.json"
 # use /data/projects.db for NAS deployment, or projects.db for local deployment
-# DEFAULT_DB_PATH = "/data/projects.db"
-DEFAULT_DB_PATH = "projects.db"
+DEFAULT_DB_PATH = "/data/projects.db"
+#DEFAULT_DB_PATH = "projects.db"
 
 def get_db_path():
     """Reads the database path from the configuration file, or returns the default."""
