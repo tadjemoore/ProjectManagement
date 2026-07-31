@@ -485,3 +485,4 @@ class ProjectManagerApp {
         await this.controller.init();
     }
 }
+
