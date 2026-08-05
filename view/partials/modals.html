@@ -407,3 +407,39 @@
     <i class="fa-solid fa-circle-check toast-icon"></i>
     <span class="toast-message">Project created successfully!</span>
 </div>
+
+<div class="modal-overlay" id="projectAttachmentsModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="projectAttachmentsModalTitle">Project Attachments</h3>
+            <button class="modal-close-btn" id="closeProjectAttachmentsModalBtn">&times;</button>
+        </div>
+
+        <form id="projectAttachmentsForm" class="attachment-form" data-project-id="" data-attachment-type="quote">
+            <div class="modal-body">
+                <!-- Hidden tech fields to kee mvc controller state sync -->
+                <input type="file" class="form-input attachment-file-input" id="projectAttachmentFile" hidden>
+                <div class="form-group" style="margin-top:10px;">
+                    <span id="selectedUploadFileName" class="modal-instruction-text">No file selected</span>
+                </div>
+                
+                <div class="form-row" style="display: flex; gap: 10px; align-items: center; margin-top:10px;">
+                    <button type="button" class="btn btn-secondary btn-sm" id="browseNasFilesBtn">
+                        <i class="fa-solid fa-folder-open"></i> Browse NAS
+                    </button>
+                    
+                    <button type="submit" class="btn btn-primary btn-sm" id="uploadAttachmentBtn">
+                        <i class="fa-solid fa-upload"></i> Upload
+                    </button>
+
+                </div>
+
+                <div id="projectAttachmentPreviewPanel" class="attachment-preview-panel">
+                    <h4 style="margin-bottom:8px;">Preview</h4>
+                    <iframe id="projectAttachmentPreviewFrame" class="attachment-preview-frame" title="Attachment Preview"></iframe>
+                </div>
+                <div id="projDetailAttachmentsList" class="project-tasks-list"></div>
+            </div>
+        </form>
+    </div>
+</div>

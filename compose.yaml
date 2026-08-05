@@ -15,5 +15,9 @@ services:
       # Should data change to Projects.db? Or should it be a directory for multiple files?
       - /volume1/docker/rhino-projects-server/data:/data # NAS path: Container path
       - /volume1/docker/rhino-projects-server/logs:/app/logs # NAS path: Container path
+    
+    environment:
+      - ATTACHMENTS_BASE_DIR=/data/project_attachments
+      - ATTACHMENTS_LIBRARY_ROOT=/data/project_attachments
   
     restart: unless-stopped

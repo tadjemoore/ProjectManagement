@@ -4,6 +4,10 @@ import hashlib
 import hmac
 import json
 import re
+import uuid
+from email.parser import BytesParser
+from email.policy import default
+import mimetypes
 import urllib.parse
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 import database
@@ -66,6 +70,12 @@ def verify_password(password, stored_hash):
 
 class APIRouter:
     #TO-DO: add more helpers to simplify code
+    ATTACHMENT_UPLOAD_DIR = os.path.join("assets", "uploads", "attachments")
+    ALLOWED_ATTACHMENT_TYPES = {
+        ".pdf", ".doc", ".docx", ".xls", ".xlsx", ".csv",
+        ".png", ".jpg", ".jpeg", ".gif", ".webp",
+        ".dwg", ".dxf", ".txt"
+    }
     @staticmethod
     def _get_user_role(conn, user_id):
         cursor = conn.cursor()
@@ -78,6 +88,54 @@ class APIRouter:
         # Centralized role gate for destructive actions
         role = APIRouter._get_user_role(conn, user_id)
         return role in ['Admin', 'Manager']
+
+    @staticmethod
+    def _normalize_attachment_type(raw_type):
+        value = (raw_type or "general").strip().lower()
+        allowed = {"general", "quote", "po", "drawing", "document", "other"}
+        return value if value in allowed else "general"
+
+    @staticmethod
+    def _sanitize_file_name(file_name):
+        # Remove path tricks and limit to safe characters
+        base_name = os.path.basename(file_name or "").strip()
+        safe_name = re.sub(r'[^a-zA-Z0-9._-]', '_', base_name)
+        return safe_name[:180] if safe_name else ""
+
+    @staticmethod
+    def _attachments_base_dir():
+        return os.environ.get("ATTACHMENTS_BASE_DIR", "/data/project_attachments")
+
+    @staticmethod
+    def _project_index_path(project_id):
+        base_dir = APIRouter._attachments_base_dir()
+        project_dir = os.path.join(base_dir, project_id)
+        os.makedirs(project_dir, exist_ok=True)
+        return os.path.join(base_dir, project_id, "attachments_index.json")
+
+    @staticmethod
+    def _load_project_index(project_id):
+        index_path = APIRouter._project_index_path(project_id)
+        if not os.path.exists(index_path):
+            return {"projectId": project_id, "attachments": []}
+
+        try:
+            with open(index_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except Exception:
+            return {"projectId": project_id, "attachments": []}
+
+    @staticmethod
+    def _save_project_index(project_id, index_data):
+        index_path = APIRouter._project_index_path(project_id)
+        with open(index_path, "w", encoding="utf-8") as f:
+            json.dump(index_data,f,indent=2)
+
+    @staticmethod
+    def _attachments_library_root():
+        # Users can browse existing NAS files to link
+        return os.environ.get("ATTACHMENTS_LIBRARY_ROOT", APIRouter._attachments_base_dir())
+
     
     @staticmethod
     def get_users(conn):
@@ -716,6 +774,263 @@ class APIRouter:
         cursor.execute("UPDATE users SET role = ? WHERE id = ?", (role, user_id))
         conn.commit()
         return {"id": user_id, "role": role, "success": True}
+    
+    @staticmethod
+    def create_attachment(conn, project_id, acting_user_id, attachment_type, original_name, file_bytes, mime_type=None, storage_subpath=""):
+        project_id = (project_id or "").strip()
+        acting_user_id = (acting_user_id or "").strip()
+        attachment_type = APIRouter._normalize_attachment_type(attachment_type)
+        original_name = APIRouter._sanitize_file_name(original_name)
+        storage_subpath = (storage_subpath or "").strip()
+
+        if not project_id:
+            return {"success": False, "status": 400, "error": "projectId is required."}
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required."}
+        if not original_name:
+            return {"success": False, "status": 400, "error": "Invalid file name."}
+        if not file_bytes:
+            return {"success": False, "status": 400, "error": "File content is required."}
+
+        ext = os.path.splitext(original_name)[1].lower()
+        if ext not in APIRouter.ALLOWED_ATTACHMENT_TYPES:
+            return {"success": False, "status": 400, "error": f"File type '{ext}' is not allowed."}
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM projects WHERE id = ?", (project_id,))
+        if not cursor.fetchone():
+            return {"success": False, "status": 404, "error": "Project not found."}
+
+        if APIRouter._is_admin_or_manager(conn, acting_user_id):
+            can_manage = True
+        else:
+            cursor.execute("SELECT owner_id FROM projects WHERE id = ?", (project_id,))
+            owner_row = cursor.fetchone()
+            can_manage = bool(owner_row) and owner_row['owner_id'] == acting_user_id
+
+        if not can_manage:
+            return {"success": False, "status": 403, "error": "User does not have permission to upload attachments for this project."}
+
+        base_dir = APIRouter._attachments_base_dir()
+        project_root = os.path.abspath(os.path.join(base_dir, project_id))
+        os.makedirs(project_root, exist_ok=True)
+
+        # user chooses folder relative to project root on NAS
+        safe_subpath = (storage_subpath or "").strip().replace("\\", "/").lstrip("/").strip()
+        target_dir = os.path.abspath(os.path.join(base_dir, project_id, safe_subpath, attachment_type))
+
+        # Prevent path traversal outside the project root
+        if not target_dir.startswith(project_root):
+            return {"success": False, "status": 400, "error": "Invalid storage subpath."}
+
+        os.makedirs(target_dir, exist_ok=True)
+        attachment_id = uuid.uuid4().hex[:20]
+        stored_name = f"{attachment_id}_{original_name}"
+        abs_path = os.path.join(target_dir, stored_name)
+
+        with open(abs_path, "wb") as f:
+            f.write(file_bytes)
+
+        final_mime = mime_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream"
+
+        index_data = APIRouter._load_project_index(project_id)
+        row = {
+            "id": attachment_id,
+            "project_id": project_id,
+            "attachment_type": attachment_type,
+            "file_name": original_name,
+            "stored_name": stored_name,
+            "file_path": abs_path,  # Physical NAS path
+            "file_size": len(file_bytes),
+            "mime_type": final_mime,
+            "uploaded_by": acting_user_id,
+            "uploaded_date": datetime.now().isoformat(timespec="seconds"),
+            "storage_subpath": safe_subpath
+        }
+        index_data["attachments"].append(row)
+        APIRouter._save_project_index(project_id, index_data)
+
+        return {"success": True, "id": attachment_id}
+
+    @staticmethod
+    def get_attachments(conn, project_id, attachment_type="all"):
+        project_id = (project_id or "").strip()
+        if not project_id:
+            return {"success": False, "status": 400, "error": "projectId is required."}
+
+        normalized = (attachment_type or "all").strip().lower()
+        index_data = APIRouter._load_project_index(project_id)
+        rows = index_data.get("attachments", [])
+
+        if normalized != "all":
+            normalized = APIRouter._normalize_attachment_type(normalized)
+            rows = [r for r in rows if r.get("attachment_type") == normalized]
+
+        # Enrich uploader names from DB for UI display
+        cursor = conn.cursor()
+        user_ids = list({r.get("uploaded_by") for r in rows if r.get("uploaded_by")})
+        users_map = {}
+        if user_ids:
+            placeholders = ",".join("?" for _ in user_ids)
+            cursor.execute(f"SELECT id, name FROM users WHERE id IN ({placeholders})", tuple(user_ids))
+            for u in cursor.fetchall():
+                users_map[u["id"]] = u["name"]
+
+        for r in rows:
+            r["uploaded_by_name"] = users_map.get(r.get("uploaded_by"), "Unknown")
+
+        # Newest first
+        rows.sort(key=lambda x: x.get("uploaded_date", ""), reverse=True)
+        return rows
+
+    @staticmethod
+    def list_nas_entries(relative_path=""):
+        root = os.path.abspath(APIRouter._attachments_base_dir())
+        rel = (relative_path or "").replace("\\", "/").lstrip("/").strip()
+
+        # Prevent path traversal outside the base directory
+        target_dir = os.path.abspath(os.path.join(root, rel))
+
+        # Prevent path traversal outside the base directory
+        if not target_dir.startswith(root):
+            return {"success": False, "status": 400, "error": "Invalid path."}
+
+        if not os.path.exists(target_dir) or not os.path.isdir(target_dir):
+            return {"success": False, "status": 404, "error": "Directory not found."}
+
+        entries = []
+        for entry in sorted(os.listdir(target_dir), key=lambda s: s.lower()):
+            abs_entry_path = os.path.join(target_dir, entry)
+            rel_child = os.path.relpath(abs_entry_path, root).replace("\\", "/")
+            entries.append({
+                "name": entry,
+                "relative_path": rel_child,
+                "is_directory": os.path.isdir(abs_entry_path),
+                "size": 0 if os.path.isdir(abs_entry_path) else os.path.getsize(abs_entry_path),
+            })
+
+        parent =""
+        if rel:
+            parent = os.path.dirname(rel).replace("\\", "/")
+
+        return {"success": True, "root": root, "currentPath": rel, "parentPath": parent, "entries": entries}
+
+    @staticmethod
+    def get_attachment_by_id(project_id, attachment_id):
+        index_data = APIRouter._load_project_index(project_id)
+        for row in index_data.get("attachments", []):
+            if str(row.get("id")) == str(attachment_id):
+                return row
+        return None
+
+    @staticmethod
+    def link_existing_attachment(conn, project_id, acting_user_id, attachment_type, nas_relative_path):
+        project_id = (project_id or "").strip()
+        acting_user_id = (acting_user_id or "").strip()
+        attachment_type = APIRouter._normalize_attachment_type(attachment_type)
+        nas_relative_path = (nas_relative_path or "").replace("\\", "/").lstrip("/")
+
+        if not project_id:
+            return {"success": False, "status": 400, "error": "projectId is required."}
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required."}
+        if not nas_relative_path:
+            return {"success": False, "status": 400, "error": "Invalid NAS relative path."}
+
+        cursor = conn.cursor()
+        cursor.execute("SELECT id FROM projects WHERE id = ?", (project_id,))
+        if not cursor.fetchone():
+            return {"success": False, "status": 404, "error": "Project not found."}
+
+        if APIRouter._is_admin_or_manager(conn, acting_user_id):
+            can_manage = True
+        else:
+           cursor.execute("SELECT owner_id FROM projects WHERE id = ?", (project_id,))
+           owner_row = cursor.fetchone()
+           can_manage = bool(owner_row) and owner_row['owner_id'] == acting_user_id
+        if not can_manage:
+           return {"success": False, "status": 403, "error": "User does not have permission to link attachments for this project."}
+
+        root = os.path.abspath(APIRouter._attachments_base_dir())
+        abs_path = os.path.abspath(os.path.join(root, nas_relative_path))
+
+        if not abs_path.startswith(root):
+            return {"success": False, "status": 400, "error": "Invalid NAS relative path."}
+        if not os.path.exists(abs_path) or not os.path.isfile(abs_path):
+            return {"success": False, "status": 404, "error": "File not found on NAS."}
+
+        original_name = APIRouter._sanitize_file_name(os.path.basename(abs_path))
+        ext = os.path.splitext(original_name)[1].lower()
+        if ext not in APIRouter.ALLOWED_ATTACHMENT_TYPES:
+            return {"success": False, "status": 400, "error": f"File type '{ext}' is not allowed."}
+
+        mime_type = mimetypes.guess_type(original_name)[0] or "application/octet-stream"
+        
+        index_data = APIRouter._load_project_index(project_id)
+        attachment_id = uuid.uuid4().hex[:20]
+
+        index_data["attachments"].append({
+            "id": attachment_id,
+            "project_id": project_id,
+            "attachment_type": attachment_type,
+            "file_name": original_name,
+            "stored_name": os.path.basename(abs_path),
+            "file_path": os.path.abspath(abs_path),  # Physical NAS path
+            "file_size": os.path.getsize(abs_path),
+            "mime_type": mime_type,
+            "uploaded_by": acting_user_id,
+            "uploaded_date": datetime.now().isoformat(timespec="seconds"),
+            "storage_subpath": os.path.dirname(nas_relative_path).replace("\\", "/")
+        })
+        APIRouter._save_project_index(project_id, index_data)
+        return {"success": True, "id": attachment_id}
+
+    @staticmethod
+    def delete_attachment(conn, attachment_id, project_id, acting_user_id):
+        project_id = (project_id or "").strip()
+        acting_user_id = (acting_user_id or "").strip()
+
+        if not project_id:
+            return {"success": False, "status": 400, "error": "projectId is required."}
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required."}
+
+        if APIRouter._is_admin_or_manager(conn, acting_user_id):
+            can_manage = True
+        else:
+            cursor = conn.cursor()
+            cursor.execute("SELECT owner_id FROM projects WHERE id = ?", (project_id,))
+            owner_row = cursor.fetchone()
+            can_manage = bool(owner_row) and owner_row['owner_id'] == acting_user_id
+        if not can_manage:
+            return {"success": False, "status": 403, "error": "User does not have permission to delete attachments for this project."}
+
+        index_data = APIRouter._load_project_index(project_id)
+        rows = index_data.get("attachments", [])
+
+        target = None
+        keep = []
+        for row in rows:
+            if str(row.get("id")) == str(attachment_id):
+                target = row
+            else:
+                keep.append(row)
+
+        if not target:
+            return {"success": False, "status": 404, "error": "Attachment not found."}
+
+        # Delete physical file from NAS
+        try:
+            file_path = target.get("file_path")
+            if file_path and os.path.exists(file_path):
+                os.remove(file_path)
+        except Exception:
+            pass
+
+        index_data["attachments"] = keep
+        APIRouter._save_project_index(project_id, index_data)
+
+        return {"success": True, "id": attachment_id}
 
 
 class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
@@ -736,6 +1051,8 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
                 self.handle_login()
             elif self.path == "/api/signup":
                 self.handle_signup()
+            elif self.path == "/api/attachments/upload":
+                self.handle_attachment_upload()
             else:
                 self.handle_api_post()
         else:
@@ -811,25 +1128,177 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
         else:
             self.send_error(404, "Not Found")
 
+    def _parse_multipart_form_data(self, body_bytes, content_type):
+            # Parse multipart/form-data without deprecated cgi module.
+            raw = (
+                f"Content-Type: {content_type}\r\n"
+                "MIME-Version: 1.0\r\n\r\n"
+            ).encode("utf-8") + body_bytes
+
+            msg = BytesParser(policy=default).parsebytes(raw)
+
+            fields = {}
+            files = {}
+
+            if not msg.is_multipart():
+                return fields, files
+
+            for part in msg.iter_parts():
+                cd_params = dict(part.get_params(header="content-disposition", unquote=True) or [])
+                field_name = cd_params.get("name")
+                filename = cd_params.get("filename")
+
+                if not field_name:
+                    continue
+
+                payload = part.get_payload(decode=True) or b""
+
+                if filename:
+                    files[field_name] = {
+                        "filename": filename,
+                        "content_type": part.get_content_type(),
+                        "content": payload
+                    }
+                else:
+                    fields[field_name] = payload.decode("utf-8", errors="replace")
+
+            return fields, files
+            
+    def handle_attachment_upload(self):
+        conn = database.get_connection()
+        try:
+            content_type = self.headers.get("Content-Type", "")
+            if "multipart/form-data" not in content_type:
+                self.send_json_response(400, {"error": "Content-Type must be multipart/form-data"})
+                return
+
+            content_length = int(self.headers.get("Content-Length", 0))
+            body_bytes = self.rfile.read(content_length)
+
+            fields, files = self._parse_multipart_form_data(body_bytes, content_type)
+
+            project_id = (fields.get("projectId") or "").strip()
+            acting_user_id = (fields.get("actingUserId") or "").strip()
+            attachment_type = (fields.get("attachmentType") or "general").strip()
+            storage_subpath = (fields.get("storageSubpath") or "").strip()
+
+            file_obj = files.get("file")
+            if not file_obj:
+                self.send_json_response(400, {"error": "Missing file field."})
+                return
+
+            original_name = file_obj.get("filename") or ""
+            mime_type = file_obj.get("content_type") or None
+            file_bytes = file_obj.get("content") or b""
+
+            print("[ATTACH UPLOAD] fields:", fields)
+            print("[ATTACH UPLOAD] project_id:", project_id)
+            print("[ATTACH UPLOAD] acting_user_id:", acting_user_id)
+            print("[ATTACH UPLOAD] attachment_type:", attachment_type)
+            print("[ATTACH UPLOAD] storage_subpath:", storage_subpath)
+            print("[ATTACH UPLOAD] has_file:", bool(file_bytes))
+
+            result = APIRouter.create_attachment(
+                conn=conn,
+                project_id=project_id,
+                acting_user_id=acting_user_id,
+                attachment_type=attachment_type,
+                original_name=original_name,
+                file_bytes=file_bytes,
+                mime_type=mime_type,
+                storage_subpath=storage_subpath
+            )
+
+            if isinstance(result, dict) and result.get("success") is False:
+                self.send_json_response(result.get("status", 400), {"error": result.get("error", "Upload failed.")})
+                return
+
+            self.send_json_response(201, result)
+
+        except Exception as e:
+            self.send_json_response(500, {"error": str(e)})
+        finally:
+            conn.close()
+
+    def handle_attachment_download(self, attachment_id, project_id, as_download=False):
+        attachment = APIRouter.get_attachment_by_id(project_id, attachment_id)
+        if not attachment:
+            self.send_json_response(404, {"error": "Attachment not found."})
+            return
+
+        file_path = attachment.get("file_path")
+        if not file_path or not os.path.exists(file_path):
+            self.send_json_response(404, {"error": "Attachment file missing."})
+            return
+
+        file_name = attachment.get("file_name", "download.bin")
+        mime_type = attachment.get("mime_type", "application/octet-stream")
+
+        try:
+            with open(file_path, "rb") as f:
+                payload = f.read()
+
+            self.send_response(200)
+            self.send_header("Content-Type", mime_type)
+            disposition = "attachment" if as_download else "inline"
+            self.send_header("Content-Disposition", f'{disposition}; filename="{file_name}"')
+            self.send_header("Content-Length", str(len(payload)))
+            self.end_headers()
+            self.wfile.write(payload)
+        except Exception as e:
+            self.send_json_response(500, {"error": str(e)})
+
     # API Request Handlers
     def handle_api_get(self):
         conn = database.get_connection()
         try:
-            if self.path == "/api/users":
+            parsed = urllib.parse.urlparse(self.path)
+            path = parsed.path
+            query = urllib.parse.parse_qs(parsed.query)
+
+            download_match = re.match(r"^/api/attachments/([^/]+)/download$", path)
+            if download_match:
+                project_id = (query.get("projectId", ["0"])[0] or "").strip()
+
+                if not project_id:
+                    self.send_json_response(400, {"error": "projectId query parameter is required for attachment download."})
+                    return
+                as_download = (query.get("download", ["0"])[0] == "1")
+                self.handle_attachment_download(download_match.group(1), project_id, as_download=as_download)
+                return
+            
+            if path == "/api/users":
                 data = APIRouter.get_users(conn)
                 self.send_json_response(200, data)
-            elif self.path == "/api/roles":
+            elif path == "/api/roles":
                 data = APIRouter.get_roles(conn)
                 self.send_json_response(200, data)
-            elif self.path == "/api/admin/roles":
+            elif path == "/api/admin/roles":
                 data = APIRouter.get_admin_roles(conn)
                 self.send_json_response(200, data)
-            elif self.path == "/api/projects":
+            elif path == "/api/projects":
                 data = APIRouter.get_projects(conn)
                 self.send_json_response(200, data)
-            elif self.path == "/api/tasks":
+            elif path == "/api/tasks":
                 data = APIRouter.get_tasks(conn)
                 self.send_json_response(200, data)
+            elif path == "/api/attachments/nas-browse":
+                rel = (query.get("relativePath", [""])[0] or "").strip()
+                data = APIRouter.list_nas_entries(rel)
+                if isinstance(data, dict) and data.get("success") is False:
+                    self.send_json_response(data.get("status", 400), {"error": data.get("error", "Invalid request")})
+                else:
+                    self.send_json_response(200, data)
+            elif path == "/api/attachments":
+                project_id = (query.get("projectId", [""])[0] or "").strip()
+                attachment_type = (query.get("attachmentType", ["all"])[0] or "all").strip()
+                data = APIRouter.get_attachments(conn, project_id, attachment_type)
+
+                if isinstance(data, dict) and data.get("success") is False:
+                    self.send_json_response(data.get("status", 400), {"error": data.get("error", "Invalid request")})
+                    return
+                else:
+                    self.send_json_response(200, data)
             else:
                 self.send_json_response(404, {"error": "Not Found"})
         except Exception as e:
@@ -863,6 +1332,21 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
                     self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid task payload")})
                     return
                 
+                self.send_json_response(201, result)
+
+            elif self.path == "/api/attachments/link":
+                result = APIRouter.link_existing_attachment(
+                    conn, 
+                    project_id=data.get("projectId"),
+                    acting_user_id=data.get("actingUserId"),
+                    attachment_type=data.get("attachmentType"),
+                    nas_relative_path=data.get("nasRelativePath")
+                )
+
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid link request")})
+                    return
+
                 self.send_json_response(201, result)
 
             else:
@@ -928,13 +1412,14 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
         conn = database.get_connection()
 
         try:
-            # Parse query string so actingUserId can be sent with DELETE request
             parsed = urllib.parse.urlparse(self.path)
             query_params = urllib.parse.parse_qs(parsed.query)
             acting_user_id = query_params.get("actingUserId", [""])[0]
+            project_id = query_params.get("projectId", [""])[0]
 
             task_match = re.match(r"^/api/tasks/([^/]+)$", parsed.path)
             project_match = re.match(r"^/api/projects/([^/]+)$", parsed.path)
+            attachment_match = re.match(r"^/api/attachments/([^/]+)$", parsed.path)
 
             if task_match:
                 task_id = task_match.group(1)
@@ -947,10 +1432,10 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
                 else:
                     self.send_json_response(404, {"error": "Task not found"})
                 return
-            
+
             if project_match:
-                project_id = project_match.group(1)
-                result = APIRouter.delete_project(conn, project_id, acting_user_id)
+                p_id = project_match.group(1)
+                result = APIRouter.delete_project(conn, p_id, acting_user_id)
 
                 if isinstance(result, dict) and result.get("success") is False:
                     self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid delete request")})
@@ -959,9 +1444,18 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
                 else:
                     self.send_json_response(404, {"error": "Project not found"})
                 return
-            
-            self.send_json_response(404, {"error": "Not Found"})
 
+            if attachment_match:
+                attachment_id = attachment_match.group(1)
+                result = APIRouter.delete_attachment(conn, attachment_id, project_id, acting_user_id)
+
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid delete request")})
+                else:
+                    self.send_json_response(200, result)
+                return
+
+            self.send_json_response(404, {"error": "Not Found"})
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})
         finally:

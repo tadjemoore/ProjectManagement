@@ -1535,6 +1535,23 @@ body {
         grid-template-columns: 1fr;
     }
 
+    @media (max-width: 900px){
+        #projectAttachmentsModal .modal-card{
+            width: 98vw;
+            max-width: 98vw;
+        }
+
+        #projectAttachmentsModal .modal-body{
+            max-height: 78vh;
+            padding: 16px;
+        }
+
+        #projectAttachmentsModal .attachment-preview-frame{
+            height: 48vh;
+            min-height: 200px;
+        }
+    }
+
 }
 
 /* --- Calendar View --- */
@@ -1702,4 +1719,74 @@ body {
         font-size: 10px;
         padding: 1px 6px;
     }
+}
+
+/* Project document tabs between header and content */
+.project-document-tabs-strip{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 14px 0 18px;
+    flex-wrap: wrap;
+}
+
+.document-tab-btn{
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-main);
+    padding: 8px 12px;
+    border-radius: var(--border-radius-sm);
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.document-tab-hover{
+    border-color: var(--border-color-hover);
+}
+
+.document-tab-active{
+    border-color: var(--color-secondary);
+    box-shadow: 0 0 0 1px var(--color-secondary-glow) inset;
+    color: #ffffff;
+}
+
+.project-document-action-row{
+    display: flex;
+    gap: 10px;
+    margin: 14px 0 18px;
+    flex-wrap: wrap;
+}
+
+
+/* Attachments modal preview panel */
+.attachment-preview-panel {
+    margin-top: 10px;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: rgba(0, 0, 0, 0.18);
+}
+
+.attachment-preview-frame {
+    width: 100%;
+    height: 320px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: #0b0f14;
+}
+
+/*  Project Attachments modal: larger footprint */
+#projectAttachmentsModal .modal-card {
+    width: min(1320px, 96vw);
+    max-width: 96vw;
+}
+
+#projectAttachmentsModal .modal-body {
+    max-height: 82vh;
+}
+
+#projectAttachmentsModal .attachment-preview-frame {
+    height: 62vh;
+    min-height: 420px;
 }

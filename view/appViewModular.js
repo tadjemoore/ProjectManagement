@@ -10,6 +10,7 @@ class AppViewModular {
         this.taskView = new TaskView(this);
         this.modalView = new ModalView(this);
         this.eventView = new EventView(this);
+        this.attachmentView = new AttachmentView(this);
 
         this.commonView.updateHeaderDate();
         this.activeView = 'dashboard';
@@ -162,6 +163,17 @@ class AppViewModular {
             closeCalendarDayDetailBtn: document.getElementById('closeCalendarDayDetailBtn'),
             calendarDayTitle: document.getElementById('calendarDayTitle'),
             calendarDayLabel: document.getElementById('calendarDayLabel'),
+
+            projectDocumentTabsStrip: document.getElementById('projectDocumentTabsStrip'),
+            projectAttachmentsModal: document.getElementById('projectAttachmentsModal'),
+            closeProjectAttachmentsModalBtn: document.getElementById('closeProjectAttachmentsModalBtn'),
+            projectAttachmentsForm: document.getElementById('projectAttachmentsForm'),
+            projectAttachmentFile: document.getElementById('projectAttachmentFile'),
+            projectAttachmentsTypeLabel: document.getElementById('projectAttachmentsTypeLabel'),
+            refreshAttachmentsBtn: document.getElementById('refreshAttachmentsBtn'),
+            projDetailAttachmentsList: document.getElementById('projDetailAttachmentsList'),
+            projectAttachmentPreviewPanel: document.getElementById('projectAttachmentPreviewPanel'),
+            projectAttachmentPreviewFrame: document.getElementById('projectAttachmentPreviewFrame')
         };
     }
 

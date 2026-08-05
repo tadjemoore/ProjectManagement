@@ -4,6 +4,7 @@ class AppModel {
         this.projectModel = new ProjectModel(this);
         this.taskModel = new TaskModel(this);
         this.calendarModel = new CalendarModel(this);
+        this.attachmentModel = new AttachmentModel(this);
 
         this.apiUrl = this.stateModel.apiUrl;
         this.state = this.stateModel.state;
@@ -137,5 +138,17 @@ class AppModel {
     }
     async updateTask(taskId, updates) {
         return this.taskModel.updateTask(taskId, updates);
+    }
+
+    async uploadAttachment(projectId, file, attachmentType = 'general', actingUserId = '', storageSubpath ='') {
+        return this.attachmentModel.uploadAttachment(projectId, file, attachmentType, actingUserId, storageSubpath);
+    }
+
+    async getProjectAttachments(projectId, attachmentType ='all') {
+        return this.attachmentModel.getProjectAttachments(projectId, attachmentType);
+    }
+
+    async deleteAttachment(attachmentId, projectId, actingUserId = '') {
+        return this.attachmentModel.deleteAttachment(attachmentId, projectId, actingUserId);
     }
 }

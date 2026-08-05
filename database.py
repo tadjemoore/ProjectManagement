@@ -7,8 +7,8 @@ import uuid
 # need an easy way to change DB path for NAS and to DEV easily by changin one variable instaed of changing code in multiple places
 CONFIG_FILE = "db_config.json"
 # use /data/projects.db for NAS deployment, or projects.db for local deployment
-DEFAULT_DB_PATH = "/data/projects.db"
-#DEFAULT_DB_PATH = "projects.db"
+#DEFAULT_DB_PATH = "/data/projects.db"
+DEFAULT_DB_PATH = "projects.db"
 
 def get_db_path():
     """Reads the database path from the configuration file, or returns the default."""
@@ -125,6 +125,13 @@ def ensure_audit_columns(cursor):
         # Backfill existing rows so API responses always have a value
         cursor.execute("UPDATE tasks SET updated_at = datetime('now') WHERE updated_at IS NULL")
 
+def ensure_attachment_columns(cursor):
+    cursor.execute("PRAGMA table_info(attachments)")
+    existing_columns = {row[1] for row in cursor.fetchall()}
+
+    if "attachment_type" not in existing_columns:
+        cursor.execute("ALTER TABLE attachments ADD COLUMN attachment_type TEXT NOT NULL DEFAULT 'general'")
+
 def initialize_database():
     """Creates the schema tables and applies migrations if needed."""
     conn = get_connection()
@@ -185,9 +192,27 @@ def initialize_database():
         FOREIGN KEY(assignee_id) REFERENCES users(id) ON DELETE SET NULL
     );
     """)
+    # create attachments table wit foreign key to projects
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS attachments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        stored_name TEXT NOT NULL,
+        file_path TEXT NOT NULL,
+        file_size INTEGER NOT NULL,
+        mime_type TEXT NOT NULL,
+        uploaded_by TEXT NOT NULL,
+        uploaded_date TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+        FOREIGN KEY(uploaded_by) REFERENCES users(id) ON DELETE SET NULL
+    );
+    """)
+
 
     ensure_users_auth_columns(cursor)
     ensure_roles_table(cursor)
+    ensure_attachment_columns(cursor)
     ensure_audit_columns(cursor)
     
     conn.commit()
