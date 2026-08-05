@@ -16,6 +16,16 @@ class AttachmentView {
     bindModalClose(){
         document.addEventListener('click', (event) => {
             if(event.target.id !=='closeProjectAttachmentsModalBtn') return;
+            const previewPanel = document.getElementById('projectAttachmentPreviewPanel');
+            const previewFrame = document.getElementById('projectAttachmentPreviewFrame');
+            const fileInput = document.getElementById('projectAttachmentFile');
+            const fileLabel = document.getElementById('selectedUploadFileName');
+
+            if (previewFrame) previewFrame.src = '';
+            if (previewPanel) previewPanel.classList.add('hidden');
+            if (fileInput) fileInput.value = '';
+            if (fileLabel) fileLabel.textContent = 'No file selected';
+            
             document.getElementById('projectAttachmentsModal')?.classList.remove('open');
         });
     }
@@ -50,6 +60,16 @@ class AttachmentView {
             btn.classList.toggle('btn-primary', isActive);
             btn.classList.toggle('btn-secondary', !isActive);
         });
+
+        const previewPanel = document.getElementById('projectAttachmentPreviewPanel');
+        const previewFrame = document.getElementById('projectAttachmentPreviewFrame');
+        const fileInput = document.getElementById('projectAttachmentFile');
+        const fileLabel = document.getElementById('selectedUploadFileName');
+
+        if (previewFrame) previewFrame.src = '';
+        if (previewPanel) previewPanel.classList.add('hidden');
+        if (fileInput) fileInput.value = '';
+        if (fileLabel) fileLabel.textContent = 'No file selected';
 
         modal?.classList.add('open');
     }
@@ -212,10 +232,9 @@ class AttachmentView {
             const input = event.target.closest('#projectAttachmentFile');
             if (!input) return;
 
-            const file = input.files[0];
-            if (!file) return;
-
+            const file = input.files[0] || null;
             const label = document.getElementById('selectedUploadFileName');
+
             if (label) {
                 label.textContent = file ? `Selected file: ${file.name}` : 'No file selected';
             }
