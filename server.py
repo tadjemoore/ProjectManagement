@@ -811,46 +811,73 @@ class APIRouter:
         if not can_manage:
             return {"success": False, "status": 403, "error": "User does not have permission to upload attachments for this project."}
 
-        base_dir = APIRouter._attachments_base_dir()
-        project_root = os.path.abspath(os.path.join(base_dir, project_id))
-        os.makedirs(project_root, exist_ok=True)
-
-        # user chooses folder relative to project root on NAS
-        safe_subpath = (storage_subpath or "").strip().replace("\\", "/").lstrip("/").strip()
-        target_dir = os.path.abspath(os.path.join(base_dir, project_id, safe_subpath, attachment_type))
-
-        # Prevent path traversal outside the project root
-        if not target_dir.startswith(project_root):
-            return {"success": False, "status": 400, "error": "Invalid storage subpath."}
-
-        os.makedirs(target_dir, exist_ok=True)
-        attachment_id = uuid.uuid4().hex[:20]
-        stored_name = f"{attachment_id}_{original_name}"
-        abs_path = os.path.join(target_dir, stored_name)
-
-        with open(abs_path, "wb") as f:
-            f.write(file_bytes)
-
         final_mime = mime_type or mimetypes.guess_type(original_name)[0] or "application/octet-stream"
+        now_ts = datetime.now().isoformat(timespec="seconds")
 
-        index_data = APIRouter._load_project_index(project_id)
-        row = {
-            "id": attachment_id,
-            "project_id": project_id,
-            "attachment_type": attachment_type,
-            "file_name": original_name,
-            "stored_name": stored_name,
-            "file_path": abs_path,  # Physical NAS path
-            "file_size": len(file_bytes),
-            "mime_type": final_mime,
-            "uploaded_by": acting_user_id,
-            "uploaded_date": datetime.now().isoformat(timespec="seconds"),
-            "storage_subpath": safe_subpath
-        }
-        index_data["attachments"].append(row)
-        APIRouter._save_project_index(project_id, index_data)
+        # Same-name auto-replace: same project + same type + same file name will overwrite the existing attachment
+        cursor.execute("""
+            SELECT id
+            FROM attachments
+            WHERE project_id = ? AND attachment_type = ? AND file_name = ?
+            ORDER BY uploaded_date DESC, id DESC
+            LIMIT 1
+        """, (project_id, attachment_type, original_name))
 
-        return {"success": True, "id": attachment_id}
+        existing = cursor.fetchone()
+
+        if existing:
+            attachment_id = existing['id']
+            cursor.execute("""
+                UPDATE attachments
+                SET stored_name =?,
+                    file_path = ?,
+                    file_size = ?,
+                    mime_type = ?,
+                    uploaded_by = ?,
+                    uploaded_date = ?,
+                    file_data = ?
+                WHERE id = ?
+            """, (
+                original_name,
+                "db://attachments/data",
+                len(file_bytes),
+                final_mime,
+                acting_user_id,
+                now_ts,
+                file_bytes,
+                attachment_id
+            ))
+            conn.commit()
+            return {"success": True, "id": attachment_id, "message": "Attachment updated."}
+
+        cursor.execute("""
+            INSERT INTO attachments (
+            project_id, 
+            file_name, 
+            stored_name, 
+            file_path, 
+            file_size, 
+            mime_type, 
+            uploaded_by, 
+            uploaded_date, 
+            attachment_type, 
+            file_data
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """, (
+            project_id,
+            original_name,
+            original_name,
+            "db://attachments/data",
+            len(file_bytes),
+            final_mime,
+            acting_user_id,
+            now_ts,
+            attachment_type,
+            file_bytes
+        ))
+
+        conn.commit()
+        return {"success": True, "id": cursor.lastrowid, "message": "Attachment created."}        
 
     @staticmethod
     def get_attachments(conn, project_id, attachment_type="all"):
@@ -859,15 +886,27 @@ class APIRouter:
             return {"success": False, "status": 400, "error": "projectId is required."}
 
         normalized = (attachment_type or "all").strip().lower()
-        index_data = APIRouter._load_project_index(project_id)
-        rows = index_data.get("attachments", [])
+        cursor = conn.cursor()
 
         if normalized != "all":
             normalized = APIRouter._normalize_attachment_type(normalized)
-            rows = [r for r in rows if r.get("attachment_type") == normalized]
+            cursor.execute("""
+                SELECT id, project_id, attachment_type, file_name, stored_name, file_size, mime_type, uploaded_by, uploaded_date
+                FROM attachments
+                WHERE project_id = ? AND attachment_type = ?
+                ORDER BY uploaded_date DESC, id DESC
+            """, (project_id, normalized))
 
-        # Enrich uploader names from DB for UI display
-        cursor = conn.cursor()
+        else:
+            cursor.execute("""
+                SELECT id, project_id, attachment_type, file_name, stored_name, file_size, mime_type, uploaded_by, uploaded_date
+                FROM attachments
+                WHERE project_id = ?
+                ORDER BY uploaded_date DESC, id DESC
+            """, (project_id,))
+
+        rows = [dict(r) for r in cursor.fetchall()]
+
         user_ids = list({r.get("uploaded_by") for r in rows if r.get("uploaded_by")})
         users_map = {}
         if user_ids:
@@ -916,12 +955,16 @@ class APIRouter:
         return {"success": True, "root": root, "currentPath": rel, "parentPath": parent, "entries": entries}
 
     @staticmethod
-    def get_attachment_by_id(project_id, attachment_id):
-        index_data = APIRouter._load_project_index(project_id)
-        for row in index_data.get("attachments", []):
-            if str(row.get("id")) == str(attachment_id):
-                return row
-        return None
+    def get_attachment_by_id(conn, project_id, attachment_id):
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, project_id, attachment_type, file_name, stored_name, file_size, mime_type, uploaded_by, uploaded_date, file_data
+            FROM attachments
+            WHERE project_id = ? AND id = ?
+            LIMIT 1
+        """, (project_id, attachment_id))
+        row = cursor.fetchone()
+        return dict(row) if row else None
 
     @staticmethod
     def link_existing_attachment(conn, project_id, acting_user_id, attachment_type, nas_relative_path):
@@ -1005,31 +1048,13 @@ class APIRouter:
         if not can_manage:
             return {"success": False, "status": 403, "error": "User does not have permission to delete attachments for this project."}
 
-        index_data = APIRouter._load_project_index(project_id)
-        rows = index_data.get("attachments", [])
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM attachments WHERE id = ? AND project_id = ?", (attachment_id, project_id))
+        conn.commit()
 
-        target = None
-        keep = []
-        for row in rows:
-            if str(row.get("id")) == str(attachment_id):
-                target = row
-            else:
-                keep.append(row)
-
-        if not target:
+        if cursor.rowcount == 0:
             return {"success": False, "status": 404, "error": "Attachment not found."}
-
-        # Delete physical file from NAS
-        try:
-            file_path = target.get("file_path")
-            if file_path and os.path.exists(file_path):
-                os.remove(file_path)
-        except Exception:
-            pass
-
-        index_data["attachments"] = keep
-        APIRouter._save_project_index(project_id, index_data)
-
+        
         return {"success": True, "id": attachment_id}
 
 
@@ -1220,14 +1245,14 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
         finally:
             conn.close()
 
-    def handle_attachment_download(self, attachment_id, project_id, as_download=False):
-        attachment = APIRouter.get_attachment_by_id(project_id, attachment_id)
+    def handle_attachment_download(self, conn, attachment_id, project_id, as_download=False):
+        attachment = APIRouter.get_attachment_by_id(conn, project_id, attachment_id)
         if not attachment:
             self.send_json_response(404, {"error": "Attachment not found."})
             return
 
-        file_path = attachment.get("file_path")
-        if not file_path or not os.path.exists(file_path):
+        file_data = attachment.get("file_data")
+        if file_data is None:
             self.send_json_response(404, {"error": "Attachment file missing."})
             return
 
@@ -1235,16 +1260,13 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
         mime_type = attachment.get("mime_type", "application/octet-stream")
 
         try:
-            with open(file_path, "rb") as f:
-                payload = f.read()
-
             self.send_response(200)
             self.send_header("Content-Type", mime_type)
             disposition = "attachment" if as_download else "inline"
             self.send_header("Content-Disposition", f'{disposition}; filename="{file_name}"')
-            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Content-Length", str(len(file_data)))
             self.end_headers()
-            self.wfile.write(payload)
+            self.wfile.write(file_data)
         except Exception as e:
             self.send_json_response(500, {"error": str(e)})
 
@@ -1264,7 +1286,7 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
                     self.send_json_response(400, {"error": "projectId query parameter is required for attachment download."})
                     return
                 as_download = (query.get("download", ["0"])[0] == "1")
-                self.handle_attachment_download(download_match.group(1), project_id, as_download=as_download)
+                self.handle_attachment_download(conn, download_match.group(1), project_id, as_download=as_download)
                 return
             
             if path == "/api/users":

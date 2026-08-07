@@ -132,6 +132,16 @@ def ensure_attachment_columns(cursor):
     if "attachment_type" not in existing_columns:
         cursor.execute("ALTER TABLE attachments ADD COLUMN attachment_type TEXT NOT NULL DEFAULT 'general'")
 
+    # Binary payload storage in DB
+    if "file_data" not in existing_columns:
+        cursor.execute("ALTER TABLE attachments ADD COLUMN file_data BLOB")
+
+    # Lookup index for list + replace checks
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_attachments_project_type_name 
+        ON attachments(project_id, attachment_type, file_name);
+    """)
+
 def initialize_database():
     """Creates the schema tables and applies migrations if needed."""
     conn = get_connection()
