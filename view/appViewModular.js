@@ -47,6 +47,7 @@ class AppViewModular {
             taskScopeFilter: document.getElementById('taskScopeFilter'),
             taskStatusFilter: document.getElementById('taskStatusFilter'),
             taskPriorityFilter: document.getElementById('taskPriorityFilter'),
+            taskDueDateFilter: document.getElementById('taskDueDateFilter'),
             globalTasksTableBody: document.getElementById('globalTasksTableBody'),
             tasksEmptyState: document.getElementById('tasksEmptyState'),
             backToProjectsBtn: document.getElementById('backToProjectsBtn'),

@@ -7,8 +7,8 @@ import uuid
 # need an easy way to change DB path for NAS and to DEV easily by changin one variable instaed of changing code in multiple places
 CONFIG_FILE = "db_config.json"
 # use /data/projects.db for NAS deployment, or projects.db for local deployment
-DEFAULT_DB_PATH = "/data/projects.db"
-#DEFAULT_DB_PATH = "projects.db"
+#DEFAULT_DB_PATH = "/data/projects.db"
+DEFAULT_DB_PATH = "projects.db"
 
 def get_db_path():
     """Reads the database path from the configuration file, or returns the default."""
@@ -142,6 +142,11 @@ def ensure_attachment_columns(cursor):
         ON attachments(project_id, attachment_type, file_name);
     """)
 
+def ensure_task_status_values(cursor):
+    cursor.execute("UPDATE tasks SET status = 'not_started' WHERE status = 'pending'")
+    cursor.execute("UPDATE tasks SET status = 'not_started' WHERE status IS NULL OR TRIM(status) = ''")
+    cursor.execute("UPDATE tasks SET status = 'not_started' WHERE status NOT IN ('not_started', 'in_progress', 'on_hold', 'completed')")
+
 def initialize_database():
     """Creates the schema tables and applies migrations if needed."""
     conn = get_connection()
@@ -195,7 +200,7 @@ def initialize_database():
         assignee_id TEXT,
         priority TEXT NOT NULL, -- 'low', 'medium', 'high'
         due_date TEXT,
-        status TEXT NOT NULL, -- 'pending', 'completed'
+        status TEXT NOT NULL, -- 'not_started', 'in_progress', 'on_hold', 'completed'
         created_at TEXT NOT NULL DEFAULT (datetime('now')), -- timestamp of creation
         updated_at TEXT NOT NULL DEFAULT (datetime('now')), -- timestamp of last update
         FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
@@ -222,6 +227,7 @@ def initialize_database():
 
     ensure_users_auth_columns(cursor)
     ensure_roles_table(cursor)
+    ensure_task_status_values(cursor)
     ensure_attachment_columns(cursor)
     ensure_audit_columns(cursor)
     

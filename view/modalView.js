@@ -58,7 +58,7 @@ class ModalView {
             this.view.taskDetailsProject.textContent = task.projectTitle || 'External Task';
         }
         this.view.taskDetailsDueDateInput.value = task.dueDate || '';
-        this.view.taskDetailsStatusSelect.value = task.status || 'pending';
+        this.view.taskDetailsStatusSelect.value = task.status || 'not_started';
         this.view.taskDetailsPrioritySelect.value = task.priority || 'medium';
         
         const assigneeOptions = ['<option value="">Unassigned</option>'];

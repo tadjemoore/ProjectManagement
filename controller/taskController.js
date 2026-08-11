@@ -14,11 +14,12 @@ class TaskController {
                 this.appController.projectStatus = status;
                 this.appController.renderProjectsList();
             },
-            (search, scope, status, priority) => {
+            (search, scope, status, priority, dueDateMode) => {
                 this.appController.taskSearch = search;
                 this.appController.taskScope = scope;
                 this.appController.taskStatus = status;
                 this.appController.taskPriority = priority;
+                this.appController.taskDueDateMode = dueDateMode;
                 this.appController.renderTasksList();
             }
         );
@@ -66,7 +67,7 @@ class TaskController {
         if (!title) {
             throw new Error('Task title cannot be empty.');
         }
-        const allowedStatus = ['pending', 'completed'];
+        const allowedStatus = ['not_started', 'in_progress', 'completed', 'on_hold'];
         if (!allowedStatus.includes(taskData.status)) {
             throw new Error(`Invalid task status: ${taskData.status}`);
         }

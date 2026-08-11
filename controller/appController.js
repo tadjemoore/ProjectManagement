@@ -12,6 +12,7 @@ class AppController {
         this.taskScope = 'all';
         this.taskStatus = 'all';
         this.taskPriority = 'all';
+        this.taskDueDateMode = 'all';
                 
         this.adminRoles = [];
 
@@ -224,7 +225,7 @@ class AppController {
         if (!currentUser) return [];
         
         if (this.hasGlobalProjectAccess(state)) {
-            return tasks;
+            return this.model.sortTasksWithCompletedLast(tasks);
         }
         
         const visibleProjectIds = new Set(
@@ -232,8 +233,9 @@ class AppController {
             .filter(project => project.memberIds.includes(currentUser.id))
             .map(project => project.id)
         );
-
-        return tasks.filter(task => visibleProjectIds.has(task.projectId));
+        
+        const filteredTasks = tasks.filter(task => visibleProjectIds.has(task.projectId));
+        return this.model.sortTasksWithCompletedLast(filteredTasks);
     }
 
     canViewProject(projectId, state = this.model.getState()) {
@@ -303,7 +305,7 @@ class AppController {
         const totalProjects = visibleProjects.length;
         const inProgressProjects = visibleProjects.filter(project => project.status === 'in_progress').length;
         const completedTasksCount = visibleTasks.filter(task => task.status === 'completed').length;
-        const pendingTasksCount = visibleTasks.filter(task => task.status === 'pending').length;
+        const pendingTasksCount = visibleTasks.filter(task => task.status !== 'completed').length;
         
         this.view.renderDashboardStats({
             totalProjects,
@@ -315,7 +317,7 @@ class AppController {
         const myProjects = this.enrichProjects(visibleProjects, visibleTasks);
         this.view.renderDashboardMyProjects(myProjects, (projId) => this.handleViewProjectDetail(projId));
         
-        const myPendingTasks = visibleTasks.filter(task => task.assigneeId === currentUser.id && task.status === 'pending');
+        const myPendingTasks = visibleTasks.filter(task => task.assigneeId === currentUser.id && task.status !== 'completed');
         this.view.renderDashboardMyTasks(
             myPendingTasks,
             visibleProjects,
@@ -336,8 +338,9 @@ class AppController {
 
     renderTasksList(state = this.model.getState()) {
         const visibleTasks = this.getVisibleTasks(state);
+        const dueDateProcessedTasks = this.model.applyDueDateMode(visibleTasks, this.taskDueDateMode);
         this.view.renderTasksTable(
-            { ...state, tasks: visibleTasks },
+            { ...state, tasks: dueDateProcessedTasks },
             (taskId) => this.handleTaskToggle(taskId),
             (taskId) => this.handleTaskClick(taskId),
             (taskId) => this.handleTaskDelete(taskId),
@@ -363,10 +366,11 @@ class AppController {
             const canManageProject = this.canManageProject(project, state);
             const role = state.currentUser?.role;
             const canDeleteDangerActions = ['Admin', 'Manager'].includes(role);
-            
+            const orderedTasks = this.model.sortTasksWithCompletedLast(this.getVisibleTasks(state));
+
             this.view.renderProjectDetail(
                 project,
-                this.getVisibleTasks(state),
+                orderedTasks,
                 state.users,
                 (taskId) => this.handleTaskToggle(taskId),
                 (taskId) => this.handleTaskDelete(taskId),
@@ -450,7 +454,7 @@ class AppController {
                 title: task.title || '',
                 dueDate: String(task.dueDate || ''),
                 priority: task.priority || 'medium',
-                status: task.status || 'pending'
+                status: task.status || 'not_started'
             }))
             .sort((a, b) => a.id.localeCompare(b.id));
         

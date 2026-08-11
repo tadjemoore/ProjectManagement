@@ -55,6 +55,18 @@ class AppModel {
     buildCalendarGrid(monthDate, items, sortBy = 'date') {
         return this.calendarModel.buildCalendarGrid(monthDate, items, sortBy);
     }
+    
+    sortTasks(tasks, sortBy = 'none') {
+        return this.taskModel.sortTasks(tasks, sortBy);
+    }
+
+    sortTasksWithCompletedLast(tasks = []) {
+        return this.taskModel.sortTasksWithCompletedLast(tasks);
+    }
+
+    applyDueDateMode(tasks, mode = 'all') {
+        return this.taskModel.applyDueDateMode(tasks, mode);
+    }
 
     async loadData() {
         try {

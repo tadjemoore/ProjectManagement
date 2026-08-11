@@ -257,13 +257,15 @@ class EventView {
                 this.view.taskSearchInput.value,
                 this.view.taskScopeFilter.value,
                 this.view.taskStatusFilter.value,
-                this.view.taskPriorityFilter.value
+                this.view.taskPriorityFilter.value,
+                this.view.taskDueDateFilter.value
             );
         };
         this.view.taskSearchInput.addEventListener('input', runTaskFilter);
         this.view.taskScopeFilter.addEventListener('change', runTaskFilter);
         this.view.taskStatusFilter.addEventListener('change', runTaskFilter);
         this.view.taskPriorityFilter.addEventListener('change', runTaskFilter);
+        this.view.taskDueDateFilter.addEventListener('change', runTaskFilter);
     }
 
     bindTaskDetailsEvents(onSave) {

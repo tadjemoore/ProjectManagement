@@ -159,7 +159,9 @@
                         </select>
                         <select id="taskStatusFilter" class="form-select">
                             <option value="all">All Statuses</option>
-                            <option value="pending">Pending</option>
+                            <option value="not_started">Not Started</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="on_hold">On Hold</option>
                             <option value="completed">Completed</option>
                         </select>
                         <select id="taskPriorityFilter" class="form-select">
@@ -167,6 +169,15 @@
                             <option value="high">High</option>
                             <option value="medium">Medium</option>
                             <option value="low">Low</option>
+                        </select>
+                        <select id="taskDueDateFilter" class="form-select">
+                            <option value="all">All Due Dates</option>
+                            <option value="due_date_ascending">Due First</option>
+                            <option value="due_date_descending">Due Last</option>
+                            <option value="due_today">Due Today</option>
+                            <option value="due_this_week">Due This Week</option>
+                            <option value="due_this_month">Due This Month</option>
+                            <option value="overdue">Overdue</option>
                         </select>
                     </div>
                 </div>

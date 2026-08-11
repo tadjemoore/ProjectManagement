@@ -318,7 +318,7 @@ class APIRouter:
                     task_assignee_id,
                     task_priority,
                     task_due_date,
-                    'pending',
+                    'not_started',  # Default status for new tasks
                     now,
                     now
                 ))
@@ -475,6 +475,11 @@ class APIRouter:
         can_manage = acting_user_role in ['Admin', 'Manager'] or acting_user_id == project_owner_id
         if not can_manage:
             return {"success": False, "status": 403, "error": "User does not have permission to create tasks for this project."}
+
+        allowed_task_statuses = ['not_started', 'in_progress', 'on_hold', 'completed']
+        task_status = (data.get("status") or "not_started").strip()
+        if task_status not in allowed_task_statuses:
+            return {"success": False, "status": 400, "error": f"Invalid task status '{task_status}'."}
         
         cursor.execute("""
             INSERT INTO tasks (id, project_id, title, description, assignee_id, priority, due_date, status, created_at, updated_at)
@@ -487,7 +492,7 @@ class APIRouter:
             data.get("assigneeId"),
             data.get("priority", "medium"),
             data.get("dueDate", ""),
-            data.get("status", "pending"),
+            task_status,
             now,
             now
         ))
@@ -575,6 +580,14 @@ class APIRouter:
         # Dynamically build update query based on fields provided
         update_fields = []
         params = []
+
+        allowed_task_statuses = ['not_started', 'in_progress', 'on_hold', 'completed']
+        if "status" in data:
+            requested_status = (data.get("status") or "").strip()
+            if requested_status not in allowed_task_statuses:
+                return {"success": False, "status": 400, "error": f"Invalid status '{requested_status}'."}
+            update_fields.append("status = ?")
+            params.append(requested_status)
         
         for field in ["status", "assignee_id", "priority", "title", "description", "due_date"]:
             db_field = field
