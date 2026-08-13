@@ -99,6 +99,8 @@ class ProjectView {
         this.view.projDetailDueDate.innerHTML = `<i class="fa-regular fa-calendar-check"></i> <span>Deadline: ${project.dueDate || 'No Date'}</span>`;
 
         const projTasks = tasks.filter(t => t.projectId === project.id);
+        this.view.renderProjectComments(project, projTasks, options);
+        
         const totalTasks = projTasks.length;
         const completedTasks = projTasks.filter(t => t.status === 'completed').length;
         const progress = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;

@@ -1153,6 +1153,22 @@ body {
     align-items: start;
 }
 
+.detail-sidebar-stack{
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+@media (max-width: 1024px) {
+    .project-detail-content {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-sidebar-stack{
+        gap: 16px;
+    }
+}
+
 .detail-sidebar-card, .detail-tasks-card {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
@@ -1244,6 +1260,69 @@ body {
     color: var(--text-muted);
     font-size: 13px;
 }
+/* Project Comments */
+.project-comments-form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.project-comments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.project-comment-card{
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    padding: 12px;
+    box-shadow: var(--box-shadow);
+}
+
+.project-comment-card .avatar-sm{
+    width: 24px;
+    height: 24px;
+    font-size: 9px;
+    flex-shrink: 0;
+}
+
+.project-comment-card .btn-delete-task {
+    margin-left: auto;
+}
+
+.project-comment-card .comment-date{
+    font-size: 10px;
+}
+
+.project-comment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.comment-time {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.comment-task-link {
+    font-size: 12px;
+    color: var(--color-secondary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.project-comment-body{
+    margin: 0;
+    white-space: pre-wrap;
+    font-size: 13px;
+    color: var(--text-light);
+}
+
 /* Project Tasks Checklist */
 .project-tasks-list {
     display: flex;

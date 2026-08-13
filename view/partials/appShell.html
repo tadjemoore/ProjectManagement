@@ -318,44 +318,62 @@
                     </div>
                 </div>
 
-                <div class="project-detail-content">
-                    <div class="detail-sidebar-card">
-                        <div class="card-title-row">
-                            <h3>Project Team</h3>
-                            <button class="btn-icon-add" id="manageMembersBtn" title="Manage Project Members">
-                                <i class="fa-solid fa-user-plus"></i>
-                            </button>
-                        </div>
-                        <div class="members-avatars-list" id="projDetailMembersList"></div>
-                    </div>
+               <div class="project-detail-content">
+    <div class="detail-sidebar-stack">
+        <div class="detail-sidebar-card">
+            <div class="card-title-row">
+                <h3>Project Team</h3>
+                <button class="btn-icon-add" id="manageMembersBtn" title="Manage Project Members">
+                    <i class="fa-solid fa-user-plus"></i>
+                </button>
+            </div>
+            <div class="members-avatars-list" id="projDetailMembersList"></div>
+        </div>
 
-                    <div class="detail-tasks-card">
-                        <div class="card-title-row">
-                            <h3>Project Checklist</h3>
-                            <button class="btn btn-primary btn-sm" id="detailAddTaskBtn">
-                                <i class="fa-solid fa-plus"></i> Add Task
-                            </button>
-                        </div>
-                        <div class="project-tasks-list" id="projDetailTasksList"></div>
-                        <div class="empty-state-card hidden" id="projTasksEmptyState">
-                            <i class="fa-solid fa-circle-nodes"></i>
-                            <p>No tasks created for this project yet.</p>
-                            <button class="btn btn-secondary btn-sm" id="detailEmptyStateAddTaskBtn">Create First Task</button>
-                        </div>
-                        <div class="detail-danger-actions">
-                            <button class="btn btn-secondary-outline hidden" id="detailEditProjectBtn">
-                                <i class="fa-solid fa-pen"></i> Edit Project
-                            </button>
-                            <button class="btn btn-danger-outline hidden" id="detailDeleteTaskBtn" disabled>
-                                <i class="fa-solid fa-trash"></i> Delete Selected Task
-                            </button>
-                            <button class="btn btn-danger-outline hidden" id="detailDeleteProjectBtn">
-                                <i class="fa-solid fa-trash"></i> Delete Project
-                            </button>
-                        </div>
-                    </div>
-                </div>
+        <div class="detail-sidebar-card">
+            <div class="card-title-row">
+                <h3>Project Comments</h3>
+                <button class="btn-icon-add" id="openProjectCommentModalBtn" title="Add Project Comment">
+                    <i class="fa-solid fa-comment-medical"></i>
+                </button>
+            </div>
+
+            <div class="project-comments-list" id="projectDetailCommentsList"></div>
+
+            <div class="empty-state-card hidden" id="projectCommentsEmptyState">
+                <i class="fa-regular fa-comment-dots"></i>
+                <p>No comments for this project yet.</p>
+            </div>
+        </div>
+    </div>
+    <div class="detail-tasks-card">
+        <div class="card-title-row">
+            <h3>Project Checklist</h3>
+            <button class="btn btn-primary btn-sm" id="detailAddTaskBtn">
+                <i class="fa-solid fa-plus"></i> Add Task
+            </button>
+        </div>
+        <div class="project-tasks-list" id="projDetailTasksList"></div>
+        <div class="empty-state-card hidden" id="projTasksEmptyState">
+            <i class="fa-solid fa-circle-nodes"></i>
+            <p>No tasks created for this project yet.</p>
+            <button class="btn btn-secondary btn-sm" id="detailEmptyStateAddTaskBtn">Create First Task</button>
+        </div>
+        <div class="detail-danger-actions">
+            <button class="btn btn-secondary-outline hidden" id="detailEditProjectBtn">
+                <i class="fa-solid fa-pen"></i> Edit Project
+            </button>
+            <button class="btn btn-danger-outline hidden" id="detailDeleteTaskBtn" disabled>
+                <i class="fa-solid fa-trash"></i> Delete Selected Task
+            </button>
+            <button class="btn btn-danger-outline hidden" id="detailDeleteProjectBtn">
+                <i class="fa-solid fa-trash"></i> Delete Project
+            </button>
+        </div>
+    </div>
+</div>
+<!-- 
             </section>
         </div>
     </main>
-</div>
+</div> -->

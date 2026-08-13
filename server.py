@@ -1070,6 +1070,148 @@ class APIRouter:
         
         return {"success": True, "id": attachment_id}
 
+    @staticmethod
+    def get_project_comments(conn, project_id = ""):
+        project_id = (project_id or "").strip()
+        if not project_id:
+            return {"success": False, "status": 400, "error": "projectId is required."}
+
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                c.id,
+                c.project_id,
+                c.task_id,
+                c.content,
+                c.user_id,
+                c.created_at,
+                c.updated_at,
+                u.name as user_name,
+                u.role as user_role,
+                u.avatar as user_avatar,
+                t.title as task_title
+            FROM comments c
+            JOIN users u ON c.user_id = u.id
+            LEFT JOIN tasks t ON c.task_id = t.id
+            WHERE c.project_id = ?
+            ORDER BY c.created_at DESC, c.id DESC
+        """, (project_id,))
+
+        comments = []
+        for row in cursor.fetchall():
+            comments.append({
+                "id": row["id"],
+                "projectId": row["project_id"],
+                "taskId": row["task_id"],
+                "taskTitle": row["task_title"],
+                "content": row["content"],
+                "userId": row["user_id"],
+                "user": {
+                    "id": row["user_id"],
+                    "name": row["user_name"],
+                    "role": row["user_role"],
+                    "avatar": row["user_avatar"]
+                },
+                "createdAt": row["created_at"],
+                "updatedAt": row["updated_at"]
+            })
+        return {"success": True, "comments": comments}
+
+    @staticmethod
+    def create_project_comment(conn, data):
+        project_id = (data.get("project_id") or data.get("projectId") or "").strip()
+        acting_user_id = (data.get("acting_user_id") or data.get("actingUserId") or "").strip()
+        content = (data.get("content") or "").strip()
+        task_id = (data.get("task_id") or data.get("taskId") or "").strip()  # Optional, can be empty
+
+        if not project_id:
+            return {"success": False, "status": 400, "error": "projectId is required."}
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required."}
+        if not content:
+            return {"success": False, "status": 400, "error": "content is required."}
+
+        cursor = conn.cursor()
+
+        cursor.execute("SELECT owner_id FROM projects WHERE id =?", (project_id,))
+        project_row = cursor.fetchone()
+        if not project_row:
+            return {"success": False, "status": 404, "error": "Project not found."}
+
+        if APIRouter._is_admin_or_manager(conn, acting_user_id) or project_row['owner_id'] == acting_user_id:
+            can_comment = True
+        else:
+            cursor.execute("""
+                SELECT 1
+                FROM project_members
+                WHERE project_id = ? AND user_id = ?
+                LIMIT 1
+            """, (project_id, acting_user_id))
+            can_comment = cursor.fetchone() is not None
+        if not can_comment:
+            return {"success": False, "status": 403, "error": "User does not have permission to comment on this project."}
+
+        if task_id:
+            cursor.execute("""
+                SELECT 1
+                FROM tasks
+                WHERE id = ? AND project_id = ?
+                LIMIT 1
+            """, (task_id, project_id))
+            if not cursor.fetchone():
+                return {"success": False, "status": 404, "error": "Task not found in this project."}
+
+        comment_id = "comment-" + str(database.uuid.uuid4())[:8]
+        now = datetime.now().isoformat(timespec='seconds')
+
+        cursor.execute("""
+            INSERT INTO comments (id, project_id, task_id, content, user_id, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """, (comment_id, 
+                  project_id, 
+                  task_id, 
+                  content, 
+                  acting_user_id, 
+                  now, 
+                  now
+                ))  
+        conn.commit()
+        return {"success": True, "id": comment_id}
+
+    @staticmethod
+    def delete_project_comment(conn, comment_id, acting_user_id):
+        comment_id = (comment_id or "").strip()
+        acting_user_id = (acting_user_id or "").strip()
+
+        if not comment_id:
+            return {"success": False, "status": 400, "error": "commentId is required."}
+        if not acting_user_id:
+            return {"success": False, "status": 400, "error": "actingUserId is required."}
+
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT c.user_id, p.owner_id
+            FROM comments c
+            JOIN projects p ON c.project_id = p.id
+            WHERE c.id = ?
+            LIMIT 1
+        """, (comment_id,))
+        row = cursor.fetchone()
+
+        if not row:
+            return {"success": False, "status": 404, "error": "Comment not found."}
+
+        is_admin_manager = APIRouter._is_admin_or_manager(conn, acting_user_id)
+        is_author = row['user_id'] == acting_user_id
+        is_project_owner = row['owner_id'] == acting_user_id
+
+        if not (is_admin_manager or is_author or is_project_owner):
+            return {"success": False, "status": 403, "error": "User does not have permission to delete this comment."}
+
+        cursor.execute("DELETE FROM comments WHERE id = ?", (comment_id,))
+        conn.commit()
+        return {"success": True, "id": comment_id}
+
 
 class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
@@ -1317,6 +1459,13 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
             elif path == "/api/tasks":
                 data = APIRouter.get_tasks(conn)
                 self.send_json_response(200, data)
+            elif path == "/api/comments":
+                project_id = (query.get("projectId", [""])[0] or "").strip()
+                data = APIRouter.get_project_comments(conn, project_id)
+                if isinstance(data, dict) and data.get("success") is False:
+                    self.send_json_response(data.get("status", 400), {"error": data.get("error", "Invalid request")})
+                else:
+                    self.send_json_response(200, data)
             elif path == "/api/attachments/nas-browse":
                 rel = (query.get("relativePath", [""])[0] or "").strip()
                 data = APIRouter.list_nas_entries(rel)
@@ -1365,6 +1514,15 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
                 # Surface business/authorization errors cleanly
                 if isinstance(result, dict) and result.get("success") is False:
                     self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid task payload")})
+                    return
+                
+                self.send_json_response(201, result)
+
+            elif self.path == "/api/comments":
+                result = APIRouter.create_project_comment(conn, data)
+
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid comment payload")})
                     return
                 
                 self.send_json_response(201, result)
@@ -1455,6 +1613,7 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
             task_match = re.match(r"^/api/tasks/([^/]+)$", parsed.path)
             project_match = re.match(r"^/api/projects/([^/]+)$", parsed.path)
             attachment_match = re.match(r"^/api/attachments/([^/]+)$", parsed.path)
+            comment_match = re.match(r"^/api/comments/([^/]+)$", parsed.path)
 
             if task_match:
                 task_id = task_match.group(1)
@@ -1483,6 +1642,16 @@ class ProjectManagerHTTPHandler(SimpleHTTPRequestHandler):
             if attachment_match:
                 attachment_id = attachment_match.group(1)
                 result = APIRouter.delete_attachment(conn, attachment_id, project_id, acting_user_id)
+
+                if isinstance(result, dict) and result.get("success") is False:
+                    self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid delete request")})
+                else:
+                    self.send_json_response(200, result)
+                return
+
+            if comment_match:
+                comment_id = comment_match.group(1)
+                result = APIRouter.delete_project_comment(conn, comment_id, acting_user_id)
 
                 if isinstance(result, dict) and result.get("success") is False:
                     self.send_json_response(result.get("status", 400), {"error": result.get("error", "Invalid delete request")})

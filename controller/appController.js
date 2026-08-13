@@ -20,13 +20,14 @@ class AppController {
         this.projectController = new ProjectController(model, view, this);
         this.taskController = new TaskController(model, view, this);
         this.calendarController = new CalendarController(model, view, this);
-        //this.attachmentController = new AttachmentController(model, view, this);
         this.attachmentView = new AttachmentView(view);
         this.attachmentController = new AttachmentController(model, this.attachmentView, this);
+        this.commentController = new CommentController(model, view, this);
 
         this.calendarInteractionDepth = 0; // 0 = no modal open, 1 = day detail modal open, 2 = project/task detail modal open
         this.calendarRenderPending = false;
         this.lastCalendarRenderHash = '';
+
     }
 
     
@@ -120,8 +121,55 @@ class AppController {
             this.view.showToast('Unable to load roles.', 'error');
         }
     }
+
+    async handleViewProjectDetail(projectId) {
+        const state = this.model.getState();
+        if (!this.canViewProject(projectId, state)) {
+            this.view.showToast('You do not have access to that project.');
+            return;
+        }
+        
+        this.activeProjectId = projectId;
+        const project = state.projects.find(item => item.id === projectId);
+        
+        if (project) {
+            const canManageProject = this.canManageProject(project, state);
+            const role = state.currentUser?.role;
+            const canDeleteDangerActions = ['Admin', 'Manager'].includes(role);
+            const orderedTasks = this.model.sortTasksWithCompletedLast(this.getVisibleTasks(state));
+            const projectComments = await this.commentController.fetchProjectComments(projectId);
+            this.view.renderProjectDetail(
+                project,
+                orderedTasks,
+                state.users,
+                (taskId) => this.handleTaskToggle(taskId),
+                (taskId) => this.handleTaskDelete(taskId),
+                (taskId) => this.handleTaskClick(taskId),
+                {
+                    canManageProject,
+                    canDeleteDangerActions, 
+                    onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId),
+                    projectComments,
+                    currentUserId: state.currentUser?.id || '',
+                    currentUserRole: state.currentUser?.role || '',
+                    onCreateComment: async (commentData) => {
+                        await this.commentController.handleCreateProjectComment(project.id, commentData);
+                        await this.handleViewProjectDetail(project.id); // Refresh the project detail view to show the new comment
+                    },
+                    onDeleteComment: async (commentId) => {
+                        await this.commentController.handleDeleteProjectComment(project.id, commentId);
+                        await this.handleViewProjectDetail(project.id); // Refresh the project detail view to reflect the deleted comment
+                    }
+                }
+            );
+            this.attachmentController.setProjectContext(project.id);
+
+            this.view.showView('project-detail');
+        }
+    }
     
-    handleStateChange(state) {
+    
+    async handleStateChange(state) {
         const { currentUser, users } = state;
         
         this.view.renderUserSwitcher(users, currentUser?.id);
@@ -145,7 +193,7 @@ class AppController {
                 const canManageProject = this.canManageProject(project, state);
                 const role = state.currentUser?.role;
                 const canDeleteDangerActions = ['Admin', 'Manager'].includes(role);
-                
+                const projectComments = await this.commentController.fetchProjectComments(this.activeProjectId);
                 this.view.renderProjectDetail(
                     project,
                     this.getVisibleTasks(state),
@@ -156,7 +204,18 @@ class AppController {
                     {
                         canManageProject, 
                         canDeleteDangerActions, 
-                        onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId)
+                        onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId),
+                        projectComments,
+                        currentUserId: state.currentUser?.id || '',
+                        currentUserRole: state.currentUser?.role || '',
+                        onCreateComment: async (commentData) => {
+                            await this.commentController.handleCreateProjectComment(project.id, commentData);
+                            await this.handleViewProjectDetail(project.id); // Refresh the project detail view to show the new comment
+                        },
+                        onDeleteComment: async (commentId) => {
+                            await this.commentController.handleDeleteProjectComment(project.id, commentId);
+                            await this.handleViewProjectDetail(project.id); // Refresh the project detail view to reflect the deleted comment
+                        }
                     }
                 );
                 this.attachmentController.setProjectContext(project.id);
@@ -350,42 +409,6 @@ class AppController {
             this.taskPriority,
             state.currentUser?.id
         );
-    }
-    
-    handleViewProjectDetail(projectId) {
-        const state = this.model.getState();
-        if (!this.canViewProject(projectId, state)) {
-            this.view.showToast('You do not have access to that project.');
-            return;
-        }
-        
-        this.activeProjectId = projectId;
-        const project = state.projects.find(item => item.id === projectId);
-        
-        if (project) {
-            const canManageProject = this.canManageProject(project, state);
-            const role = state.currentUser?.role;
-            const canDeleteDangerActions = ['Admin', 'Manager'].includes(role);
-            const orderedTasks = this.model.sortTasksWithCompletedLast(this.getVisibleTasks(state));
-
-            this.view.renderProjectDetail(
-                project,
-                orderedTasks,
-                state.users,
-                (taskId) => this.handleTaskToggle(taskId),
-                (taskId) => this.handleTaskDelete(taskId),
-                (taskId) => this.handleTaskClick(taskId),
-                {
-                    canManageProject,
-                    canDeleteDangerActions, 
-                    onDeleteProject: (projectId) => this.projectController.handleProjectDelete(projectId),
-                }
-            );
-            this.attachmentController.setProjectContext(project.id);
-        
-
-            this.view.showView('project-detail');
-        }
     }
     
     async handleTaskToggle(taskId) {

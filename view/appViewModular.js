@@ -11,6 +11,7 @@ class AppViewModular {
         this.modalView = new ModalView(this);
         this.eventView = new EventView(this);
         this.attachmentView = new AttachmentView(this);
+        this.commentView = new CommentView(this);
 
         this.commonView.updateHeaderDate();
         this.activeView = 'dashboard';
@@ -174,7 +175,17 @@ class AppViewModular {
             refreshAttachmentsBtn: document.getElementById('refreshAttachmentsBtn'),
             projDetailAttachmentsList: document.getElementById('projDetailAttachmentsList'),
             projectAttachmentPreviewPanel: document.getElementById('projectAttachmentPreviewPanel'),
-            projectAttachmentPreviewFrame: document.getElementById('projectAttachmentPreviewFrame')
+            projectAttachmentPreviewFrame: document.getElementById('projectAttachmentPreviewFrame'),
+
+            projectDetailCommentsList: document.getElementById('projectDetailCommentsList'),
+            projectCommentsEmptyState: document.getElementById('projectCommentsEmptyState'),
+            openProjectCommentModalBtn: document.getElementById('openProjectCommentModalBtn'),
+            addProjectCommentModal: document.getElementById('addProjectCommentModal'),
+            closeAddProjectCommentModalBtn: document.getElementById('closeAddProjectCommentModalBtn'),
+            cancelAddProjectCommentBtn: document.getElementById('cancelAddProjectCommentBtn'),
+            addProjectCommentForm: document.getElementById('addProjectCommentForm'),
+            addProjectCommentBody: document.getElementById('addProjectCommentBody'),
+            addProjectCommentTaskSelect: document.getElementById('addProjectCommentTaskSelect'),
         };
     }
 
@@ -204,6 +215,8 @@ class AppViewModular {
     renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal = '', scopeVal = 'all', statusVal = 'all', priorityVal = 'all', activeUserId) { return this.taskView.renderTasksTable({ tasks, projects, users }, onToggle, onTaskClick, onDelete, searchVal, scopeVal, statusVal, priorityVal, activeUserId); }
 
     renderMonthlyCalendar(calendarGrid, handlers) {return this.calendarView.renderMonthlyCalendar(calendarGrid, handlers); }
+
+    renderProjectComments(project, tasks, options = {}) { return this.commentView.renderProjectComments(project, tasks, options); }
 
     openCalendarProjectDetailModal(project, users, tasks) { return this.modalView.openCalendarProjectDetailModal(project, users, tasks); }
     openCalendarTaskDetailModal(task, users, projects) { return this.modalView.openCalendarTaskDetailModal(task, users, projects); }

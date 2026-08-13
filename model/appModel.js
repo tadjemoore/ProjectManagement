@@ -5,6 +5,7 @@ class AppModel {
         this.taskModel = new TaskModel(this);
         this.calendarModel = new CalendarModel(this);
         this.attachmentModel = new AttachmentModel(this);
+        this.commentModel = new CommentModel(this);
 
         this.apiUrl = this.stateModel.apiUrl;
         this.state = this.stateModel.state;
@@ -162,5 +163,16 @@ class AppModel {
 
     async deleteAttachment(attachmentId, projectId, actingUserId = '') {
         return this.attachmentModel.deleteAttachment(attachmentId, projectId, actingUserId);
+    }
+
+    async getProjectComments(projectId) {
+        return this.commentModel.getProjectComments(projectId);
+    }
+
+    async createProjectComment(commentData) {
+        return this.commentModel.createProjectComment(commentData);
+    }
+    async deleteProjectComment(commentId) {
+        return this.commentModel.deleteProjectComment(commentId);
     }
 }

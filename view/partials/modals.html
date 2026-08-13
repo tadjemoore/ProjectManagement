@@ -162,6 +162,36 @@
     </div>
 </div>
 
+<div class="modal-overlay" id="addProjectCommentModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3>Add Project Comment</h3>
+            <button class="modal-close-btn" id="closeAddProjectCommentModalBtn">&times;</button>
+        </div>
+        <form id="addProjectCommentForm">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="addProjectCommentBody" class="form-label required">Comment</label>
+                    <textarea id="addProjectCommentBody" class="form-input form-textarea" placeholder="Write your comment..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="addProjectCommentTaskSelect" class="form-label">Link Task (Optional)</label>
+                    <select id="addProjectCommentTaskSelect" class="form-select">
+                        <option value="">No linked task</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" id="cancelAddProjectCommentBtn">Cancel</button>
+                <button type="submit" class="btn btn-primary">Post Comment</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
 <div class="modal-overlay" id="taskDetailsModal">
     <div class="modal-card">
         <div class="modal-header">

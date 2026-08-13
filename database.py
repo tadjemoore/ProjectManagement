@@ -7,8 +7,8 @@ import uuid
 # need an easy way to change DB path for NAS and to DEV easily by changin one variable instaed of changing code in multiple places
 CONFIG_FILE = "db_config.json"
 # use /data/projects.db for NAS deployment, or projects.db for local deployment
-DEFAULT_DB_PATH = "/data/projects.db"
-# DEFAULT_DB_PATH = "projects.db"
+# DEFAULT_DB_PATH = "/data/projects.db"
+DEFAULT_DB_PATH = "projects.db"
 
 def get_db_path():
     """Reads the database path from the configuration file, or returns the default."""
@@ -224,12 +224,34 @@ def initialize_database():
     );
     """)
 
+    def ensure_comments_table(cursor):
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS comments (
+            id TEXT PRIMARY KEY,
+            project_id TEXT NOT NULL,
+            task_id TEXT,
+            content TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            created_at TEXT NOT NULL DEFAULT (datetime('now')),
+            updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+            FOREIGN KEY(project_id) REFERENCES projects(id) ON DELETE CASCADE,
+            FOREIGN KEY(task_id) REFERENCES tasks(id) ON DELETE SET NULL,
+            FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE RESTRICT
+        );
+        """)
+
+        cursor.execute("""
+            CREATE INDEX IF NOT EXISTS idx_comments_project_created
+            ON comments(project_id, created_at DESC);
+        """)
+
 
     ensure_users_auth_columns(cursor)
     ensure_roles_table(cursor)
     ensure_task_status_values(cursor)
     ensure_attachment_columns(cursor)
     ensure_audit_columns(cursor)
+    ensure_comments_table(cursor)
     
     conn.commit()
 
